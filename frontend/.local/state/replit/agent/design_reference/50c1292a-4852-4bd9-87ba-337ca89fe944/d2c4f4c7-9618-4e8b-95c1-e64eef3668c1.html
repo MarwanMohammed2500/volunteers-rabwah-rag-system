@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساعد إدارة التطوع الذكي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'arabic': ['Noto Sans Arabic', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#1CBAB5',
+                        'secondary': '#F69059',
+                        'neutral-50': '#F8F9FA',
+                        'neutral-100': '#E9ECEF',
+                        'neutral-600': '#6C757D',
+                        'neutral-800': '#495057',
+                        'neutral-900': '#2C3E50'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .message-animation {
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #1CBAB5;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #17a2a0;
+        }
+    </style>
+</head>
+<body class="bg-neutral-50 font-arabic">
+    <!-- @COMPONENT: Header [Logo only, no navigation] -->
+    <header class="bg-white shadow-sm border-b border-neutral-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-center items-center h-16">
+                <!-- Placeholder for logo - replace with actual logo -->
+                <div class="flex items-center">
+                    <div class="bg-primary text-white w-10 h-10 rounded-lg flex items-center justify-center ml-3">
+                        <i class="fas fa-hands-helping text-lg"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-neutral-900">جمعية الربوة الخيرية</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- @COMPONENT: ChatInterface [Main chat container] -->
+    <div class="flex flex-col h-screen bg-neutral-50" style="height: calc(100vh - 4rem);">
+        
+        <!-- Chat Title Section -->
+        <div class="bg-white border-b border-neutral-100 py-4 px-6">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-2xl font-bold text-neutral-900 mb-2">مساعد إدارة التطوع الذكي</h1>
+                <p class="text-neutral-600">مساعدك الذكي للحصول على المعلومات حول الفرص التطوعية والأنشطة الخيرية</p>
+            </div>
+        </div>
+
+        <!-- @COMPONENT: MessageArea [Scrollable chat messages container] -->
+        <div id="messageArea" class="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin">
+            <div class="max-w-4xl mx-auto space-y-4">
+                
+                <!-- Welcome Message from Bot -->
+                <div class="flex items-start space-x-3 space-x-reverse message-animation">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-secondary text-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 max-w-lg">
+                        <div class="bg-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm border border-neutral-100">
+                            <p class="text-neutral-800 leading-relaxed">
+                                أهلاً وسهلاً بك في مساعد إدارة التطوع الذكي! 
+                                <br><br>
+                                يمكنني مساعدتك في العثور على الفرص التطوعية المناسبة، معرفة تفاصيل الأنشطة، أو الإجابة على أي استفسارات حول التطوع في الجمعية.
+                                <br><br>
+                                كيف يمكنني مساعدتك اليوم؟
+                            </p>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1 mr-4">
+                            الآن
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sample User Message -->
+                <div class="flex items-start space-x-3 space-x-reverse justify-end message-animation" data-mock="true">
+                    <div class="flex-1 max-w-lg">
+                        <div class="bg-primary text-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                            <p class="leading-relaxed">
+                                أريد معرفة الفرص التطوعية المتاحة للرجال
+                            </p>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1 ml-4 text-left">
+                            منذ دقيقة
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sample Bot Response -->
+                <div class="flex items-start space-x-3 space-x-reverse message-animation" data-mock="true">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-secondary text-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 max-w-lg">
+                        <div class="bg-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm border border-neutral-100">
+                            <p class="text-neutral-800 leading-relaxed">
+                                ممتاز! لدينا عدة فرص تطوعية مناسبة للرجال:
+                                <br><br>
+                                <strong>1. نادي المسلم الجديد</strong>
+                                <br>• تعليم المسلمين الجدد سورة الفاتحة وصفة الوضوء
+                                <br>• يوم الجمعة بعد الصلاة
+                                <br>• 5 ساعات تطوعية
+                                <br><br>
+                                <strong>2. إلقاء كلمة في مصلى المدرسة</strong>
+                                <br>• إلقاء كلمات توعوية للطلاب
+                                <br>• 10 ساعات تطوعية
+                                <br><br>
+                                هل تريد تفاصيل أكثر عن أي من هذه الفرص؟
+                            </p>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1 mr-4">
+                            منذ لحظات
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State (Hidden by default) -->
+                <div id="loadingMessage" class="flex items-start space-x-3 space-x-reverse hidden">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-secondary text-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 max-w-lg">
+                        <div class="bg-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm border border-neutral-100">
+                            <div class="flex items-center space-x-1 space-x-reverse">
+                                <div class="typing-indicator w-2 h-2 bg-neutral-400 rounded-full"></div>
+                                <div class="typing-indicator w-2 h-2 bg-neutral-400 rounded-full" style="animation-delay: 0.2s;"></div>
+                                <div class="typing-indicator w-2 h-2 bg-neutral-400 rounded-full" style="animation-delay: 0.4s;"></div>
+                                <span class="text-neutral-600 text-sm mr-2">المساعد يكتب...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- @END_COMPONENT: MessageArea -->
+
+        <!-- @COMPONENT: InputArea [Message input and send button] -->
+        <div class="bg-white border-t border-neutral-100 px-4 py-4">
+            <div class="max-w-4xl mx-auto">
+                <form id="messageForm" class="flex items-end space-x-3 space-x-reverse">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <textarea 
+                                id="messageInput"
+                                placeholder="اكتب رسالتك هنا..."
+                                class="w-full resize-none rounded-2xl border border-neutral-200 px-4 py-3 pr-4 pl-12 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-neutral-800 leading-relaxed"
+                                rows="1"
+                                style="min-height: 44px; max-height: 120px;"
+                                data-event="input:autoResize"
+                            ></textarea>
+                            <!-- Attachment Button (Optional) -->
+                            <button 
+                                type="button" 
+                                class="absolute left-3 bottom-3 text-neutral-400 hover:text-neutral-600 transition-colors"
+                                data-event="click:attachFile"
+                            >
+                                <i class="fas fa-paperclip text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button 
+                        type="submit"
+                        id="sendButton"
+                        class="bg-primary hover:bg-primary/90 text-white rounded-2xl px-6 py-3 transition-colors duration-200 flex items-center justify-center min-w-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-event="click:sendMessage"
+                    >
+                        <i class="fas fa-paper-plane text-lg"></i>
+                    </button>
+                </form>
+
+                <!-- Quick Actions (Optional) -->
+                <div class="mt-3 flex flex-wrap gap-2 justify-center" data-mock="true">
+                    <button class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-2 rounded-full text-sm transition-colors" data-event="click:quickAction">
+                        الفرص التطوعية المتاحة
+                    </button>
+                    <button class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-2 rounded-full text-sm transition-colors" data-event="click:quickAction">
+                        ساعات التطوع
+                    </button>
+                    <button class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-2 rounded-full text-sm transition-colors" data-event="click:quickAction">
+                        كيفية التسجيل
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: InputArea -->
+
+    </div>
+    <!-- @END_COMPONENT: ChatInterface -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        (function() {
+            const messageForm = document.getElementById('messageForm');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const messageArea = document.getElementById('messageArea');
+            const loadingMessage = document.getElementById('loadingMessage');
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                
+                // Enable/disable send button based on input
+                sendButton.disabled = !this.value.trim();
+            });
+
+            // Handle form submission
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                
+                if (!message) return;
+
+                // Add user message to chat
+                addMessage(message, 'user');
+                
+                // Clear input
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                sendButton.disabled = true;
+
+                // Show loading state
+                showLoading();
+
+                // TODO: Send message to RAG chatbot API
+                // Simulate API response
+                setTimeout(() => {
+                    hideLoading();
+                    addMessage('شكراً لك على رسالتك. سأقوم بالبحث عن المعلومات المطلوبة...', 'bot');
+                }, 1500);
+            });
+
+            // Add message to chat
+            function addMessage(text, sender) {
+                const messageContainer = document.querySelector('#messageArea .max-w-4xl');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `flex items-start space-x-3 space-x-reverse message-animation ${sender === 'user' ? 'justify-end' : ''}`;
+
+                if (sender === 'user') {
+                    messageDiv.innerHTML = `
+                        <div class="flex-1 max-w-lg">
+                            <div class="bg-primary text-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                                <p class="leading-relaxed">${text}</p>
+                            </div>
+                            <div class="text-xs text-neutral-500 mt-1 ml-4 text-left">الآن</div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-sm"></i>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-secondary text-white rounded-full flex items-center justify-center">
+                                <i class="fas fa-robot text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 max-w-lg">
+                            <div class="bg-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm border border-neutral-100">
+                                <p class="text-neutral-800 leading-relaxed">${text}</p>
+                            </div>
+                            <div class="text-xs text-neutral-500 mt-1 mr-4">الآن</div>
+                        </div>
+                    `;
+                }
+
+                messageContainer.appendChild(messageDiv);
+                messageArea.scrollTop = messageArea.scrollHeight;
+            }
+
+            function showLoading() {
+                loadingMessage.classList.remove('hidden');
+                messageArea.scrollTop = messageArea.scrollHeight;
+            }
+
+            function hideLoading() {
+                loadingMessage.classList.add('hidden');
+            }
+
+            // Handle quick action buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('[data-event*="quickAction"]')) {
+                    const buttonText = e.target.textContent;
+                    messageInput.value = buttonText;
+                    messageInput.focus();
+                    sendButton.disabled = false;
+                }
+            });
+
+            // Handle Enter key submission
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    messageForm.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // Initialize send button state
+            sendButton.disabled = true;
+        })();
+    </script>
+</body>
+</html>
