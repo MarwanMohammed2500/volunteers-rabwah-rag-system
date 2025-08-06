@@ -33,23 +33,20 @@ A Retrieval-Augmented Generation (RAG) system designed to provide intelligent cu
 
 ## Installation
 
-### Option 1: Docker (Recommended)
-
-```bash
-# Build the image
-docker build -t rag-app .
-
-# Run the container (maps admin to 8501 and user interface to 8502)
-docker run -p 8501:8501 -p 8502:8502 rag-app
-```
-
-### Option 2: Local Development
+### Local Development
 
 1. Create and activate virtual environment:
 ```bash
+# Clone the repo
+git clone https://github.com/MarwanMohammed2500/volunteers-rabwah-rag-system.git
+cd volunteers-rabwah-rag-system
+
+# Prepare the virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# OR
+```
+OR
+```bash
 .\venv\Scripts\activate  # Windows
 ```
 
@@ -67,19 +64,31 @@ PINECONE_API_KEY=your_pinecone_api_key
 4. Run the applications:
 ```bash
 # In separate terminals
-streamlit run src/admin_ui.py  # Admin interface on port 8501
-streamlit run src/user_ui.py  # User interface on port 8502
+sudo docker compose -f Docker/docker-compose.yml up
+```
+OR
+```bash
+# Run the app's frontend
+npm install
+npm run build
+npm start
+
+# Run the FastAPI Backend
+python3 run_server.py
+
+# To run the admin panel
+streamlit run src/admin_ui.py
 ```
 
 ## Usage
 
-### Admin Interface (Port 8501)
+### Admin Interface (ragbot.com:8000/admin)
 - Upload documents (PDF, DOCX, TXT)
 - Process YouTube URLs
 - Monitor document processing status
 - Manage knowledge base content
 
-### User Interface (Port 8502)
+### User Interface (ragbot.com)
 - Natural language Q&A
 - Context-aware conversations
 - Knowledge-based responses

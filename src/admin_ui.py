@@ -3,8 +3,6 @@ import streamlit as st
 from utils.Load_data import loading_data
 from utils.Vector_db import add_documents_to_pinecone, delete_vectors_by_source
 
-FASTAPI_BASE_URL = "http://fastapi:8080"
-
 def main():
     st.set_page_config(layout="wide", page_icon="🤖", page_title="Admin RAG UI")
     st.title("`Admin RAG UI`")
