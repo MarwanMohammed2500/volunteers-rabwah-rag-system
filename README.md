@@ -66,19 +66,6 @@ PINECONE_API_KEY=your_pinecone_api_key
 # In separate terminals
 sudo docker compose -f Docker/docker-compose.yml up
 ```
-OR
-```bash
-# Run the app's frontend
-npm install
-npm run build
-npm start
-
-# Run the FastAPI Backend
-python3 run_server.py
-
-# To run the admin panel
-streamlit run src/admin_ui.py
-```
 
 ## Usage
 
