@@ -11,5 +11,4 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
-    source_documents: list[dict] = []
     session_id: str

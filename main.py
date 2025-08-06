@@ -26,16 +26,15 @@ async def chat_endpoint(session_id: str, request: ChatRequest):
         ]
 
         rag_response = get_response(
-            user_query=request.content,  # Using content instead of query
+            user_query=request.content,
             chat_history=rag_history
         )
 
         return JSONResponse({
             "response": rag_response['answer'],
-            "source_documents": rag_response.get('source_documents', []),
             "session_id": session_id
         })
 
     except Exception as e:
-        print("Error processing chat:", str(e))
+        print("[ERROR] Error processing chat:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
