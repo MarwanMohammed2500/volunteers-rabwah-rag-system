@@ -17,11 +17,14 @@ A Retrieval-Augmented Generation (RAG) system designed to provide intelligent cu
 | Component          | Technology                          |
 |--------------------|-------------------------------------|
 | LLM                | Google Gemini 2.5 Flash             |
-| Embeddings         | Google text-embedding-004           |
+| Embeddings         | AraVec 100 Vec-Size                 |
 | Vector Database    | Pinecone (Serverless)               |
 | Framework          | LangChain                           |
 | Frontend           | Streamlit                           |
 | Deployment         | Docker                              |
+
+## Download the model
+Download the model from [here](https://bakrianoo.ewr1.vultrobjects.com/aravec/full_grams_cbow_100_twitter.zip) into a directory called "models" and unzip the file, after that move the models to live in the models directory, instead of models/full_grams_cbow_100_twitter
 
 ## Prerequisites
 
