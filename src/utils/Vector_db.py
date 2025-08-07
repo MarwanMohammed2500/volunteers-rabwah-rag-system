@@ -16,13 +16,13 @@ _ = load_dotenv(override=True)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
-def create_index(index_name: str='non-profit-rag', vect_length: int = 768):
+def create_index(index_name: str='non-profit-rag', vect_length: int = 100):
     """
     Creates a Pinecone index with the specified name and vector length.
 
     Args:
         index_name (str): The name of the index to create. Defaults to 'non-profit-rag'.
-        vect_length (int): The length of the vectors in the index. Defaults to 768.
+        vect_length (int): The length of the vectors in the index. Defaults to 100.
 
     Returns:
         None
@@ -38,14 +38,14 @@ def create_index(index_name: str='non-profit-rag', vect_length: int = 768):
         )
         logger.info(f'Done Creating Index: {index_name}')
 
-def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int=768, 
+def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int=100, 
                               documents: List[Document]=None):
     """
     Adds a list of documents to a Pinecone index. If the index does not exist, it is created first.
 
     Args:
         index_name (str): The name of the index to add the documents to. Defaults to 'non-profit-rag'.
-        vect_length (int): The length of the vectors in the index. Defaults to 768.
+        vect_length (int): The length of the vectors in the index. Defaults to 100.
         documents (List[Document], optional): The list of documents to add to the index. Defaults to None.
 
     Returns:

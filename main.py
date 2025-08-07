@@ -6,8 +6,8 @@ from models import ChatRequest
 from src.utils.full_chain import get_response
 import httpx
 from requests import Request
-app = FastAPI()
 
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173",
@@ -24,11 +24,13 @@ async def chat_endpoint(session_id: str, request: ChatRequest):
             f"{'Human' if 'human' in msg else 'AI'}: {list(msg.values())[0]}"
             for msg in request.chat_history
         ]
+        print("[INFO] Prepared chat history")
 
         rag_response = get_response(
             user_query=request.content,
             chat_history=rag_history
         )
+        print(f"[INFO] response: {rag_response['answer']}")
 
         return JSONResponse({
             "response": rag_response['answer'],

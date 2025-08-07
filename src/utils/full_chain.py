@@ -7,13 +7,45 @@ from langchain_pinecone import PineconeVectorStore
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-
+from gensim.models import Word2Vec, KeyedVectors
+from langchain.embeddings.base import Embeddings
+import numpy as np
+from nltk.tokenize import sent_tokenize, word_tokenize
+import nltk
+nltk.download('punkt_tab')
 
 # Load environment variables
 _ = load_dotenv(override=True)
 
+class AraVecEmbeddings(Embeddings):
+    def __init__(self, model: str):
+        self.model = model.wv
+
+    def embed_documents(self, text):
+        embeddings = []
+        for text in texts:
+            sent_tokenized = sent_tokenize(text)
+            words = [word_tokenize(sent) for sent in sent_tokenized]
+            word_vectors = [self.model[word] for word in words if word in self.model]
+            if word_vectors:
+                avg_vector = np.mean(word_vectors, axis=0)
+                embeddings.append([float(x) for x in avg_vector]) # Average word vectors
+            else:
+                embeddings.append(np.zeros(self.model.vector_size).tolist()) # Handle empty or OOV texts
+        return embeddings
+
+    def embed_query(self, text: str):
+        sent_tokenized = sent_tokenize(text)
+        words = [token for sent in sent_tokenized for token in word_tokenize(sent)]
+        word_vectors = [self.model[word] for word in words if word in self.model]
+        if word_vectors:
+            avg_vector = np.mean(word_vectors, axis=0)
+            return [float(x) for x in avg_vector]
+        else:
+            return [0.0] * self.model.vector_size
+
 def create_retriever_chain(vectorstore):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 10, "fetch_k": 5, "score_threshold": 0.2})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 5, "fetch_k": 10, "score_threshold": 0.3, "alpha":0.5})
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", 
                                  api_key=os.getenv('GOOGLE_API_KEY', ""))
@@ -58,18 +90,17 @@ def create_retriever_chain(vectorstore):
     )
 
 
-index_name = 'non-profit-rag'
+index_name = 'non-profit-rag-100'
 try:
     asyncio.get_running_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
     
-embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
-                                            google_api_key=os.getenv('GOOGLE_API_KEY', ""),
-                                            embed_config={"output_dimensionality": 768})
+embedding_model = Word2Vec.load("models/full_grams_cbow_100_twitter/full_grams_cbow_100_twitter.mdl")
+embedding_function = AraVecEmbeddings(embedding_model)
 
 # embedding_model = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=os.getenv('OPENAI_API_KEY'))
-vector_db = PineconeVectorStore(embedding=embedding_model, index_name=index_name)
+vector_db = PineconeVectorStore(embedding=embedding_function, index_name=index_name)
 
 
 def get_response(user_query, chat_history):
