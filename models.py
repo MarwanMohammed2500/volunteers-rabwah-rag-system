@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import List, Dict
 class ChatMessage(BaseModel):
     content: str
     is_bot: bool

@@ -7,9 +7,6 @@ from langchain_pinecone import PineconeVectorStore
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-# from gensim.models import Word2Vec
-# from .model import AraVecEmbeddings
-# from langchain_cohere import CohereEmbeddings
 
 # Load environment variables
 _ = load_dotenv(override=True)
@@ -66,11 +63,7 @@ try:
     asyncio.get_running_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
-    
-# embedding_model = Word2Vec.load("models/full_grams_cbow_100_twitter/full_grams_cbow_100_twitter.mdl")
-# embedding_function = AraVecEmbeddings(embedding_model)
-# embedding_model = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=os.getenv('OPENAI_API_KEY'))
-# embedding_model = CohereEmbeddings(model="embed-multilingual-light-v3.0")
+
 embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
                                             google_api_key=os.getenv('GOOGLE_API_KEY', ""))
 vector_db = PineconeVectorStore(embedding=embedding_model, index_name=index_name)

@@ -6,10 +6,7 @@ from dotenv import load_dotenv
 from langchain.schema import Document
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
-# from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-# from langchain_cohere import CohereEmbeddings
-# from .model import AraVecEmbeddings
 
 # Load environment variables
 _ = load_dotenv(override=True)
@@ -63,14 +60,7 @@ def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int
             asyncio.get_running_loop()
         except RuntimeError:
             asyncio.set_event_loop(asyncio.new_event_loop())
-        
-        # embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
-                                                    #    google_api_key=os.getenv('GOOGLE_API_KEY', ""))
-        
-        # embedding_model = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=os.getenv('OPENAI_API_KEY'))
-        # embedding_model = Word2Vec.load("models/full_grams_cbow_100_twitter/full_grams_cbow_100_twitter.mdl")
-        # embedding_function = AraVecEmbeddings(embedding_model)
-        # embedding_model = CohereEmbeddings(model="embed-multilingual-light-v3.0")
+
         embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
                                             google_api_key=os.getenv('GOOGLE_API_KEY', ""))
         pinecone = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ""))
@@ -80,10 +70,8 @@ def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int
             
             create_index(index_name=index_name, vect_length=vect_length)
             logger.info("✅ Successfully created the index in Pinecone.")
-            
-            ## If you using OpenAI
-            # create_index(index_name=index_name, vect_length=1536)
-            # logger.info("✅ Successfully created the index in Pinecone.")
+
+            logger.info("✅ Successfully created the index in Pinecone.")
 
         vector_store = PineconeVectorStore(
             index_name=index_name,

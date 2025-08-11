@@ -1,11 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from models import ChatRequest
 from src.utils.full_chain import get_response
-import httpx
-from requests import Request
 
 app = FastAPI()
 app.add_middleware(
