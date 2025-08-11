@@ -17,10 +17,10 @@ _ = load_dotenv(override=True)
 def create_retriever_chain(vectorstore):
     retriever = vectorstore.as_retriever(search_kwargs={"k": 10, "fetch_k": 10, "score_threshold": 0.3})
     
-    # llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", 
-    #                              api_key=os.getenv('GOOGLE_API_KEY', ""))
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", 
+                                 api_key=os.getenv('GOOGLE_API_KEY', ""))
 
-    llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+    # llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     template = """
     You are a professional and knowledgeable AI assistant helping users retrieve information from a book.
 
