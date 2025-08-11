@@ -1,44 +1,48 @@
 # RAG Assistant
 
-A Retrieval-Augmented Generation (RAG) system designed to provide intelligent customer support for non-profit organizations, powered by Google Gemini and Pinecone.
+## Introduction
+A Retrieval-Augmented Generation (RAG) system designed to provide intelligent customer support for Rabwah's volunteering administration, powered by Google Gemini and Pinecone.
+
+---
 
 ## Features
 
-- **Document Management**: Upload and process PDFs, Word docs, and text files
-- **Web Content Integration**: Extract and index content from URLs
+- **Document Management**: Upload and process PDFs, Word docs (.docx), and text (.txt) files
+- **Web Content Integration**: Extract and index content from Youtube URLs
 - **Conversational AI**: Two interface modes:
   - **Admin Interface**: For knowledge base management
   - **User Interface**: For end-user interactions
 - **Vector Search**: Pinecone-powered semantic search
 - **Multi-turn Conversations**: Context-aware chat history
+---
 
 ## Technology Stack
 
 | Component          | Technology                          |
 |--------------------|-------------------------------------|
 | LLM                | Google Gemini 2.5 Flash             |
-| Embeddings         | AraVec 100 Vec-Size                 |
+| Embeddings         | Google's embedding-001              |
 | Vector Database    | Pinecone (Serverless)               |
 | Framework          | LangChain                           |
-| Frontend           | Streamlit                           |
-| Deployment         | Docker                              |
+| Frontend           | NodeJS                              |
+| Containers         | Docker                              |
 
-## Download the model
-Download the model from [here](https://bakrianoo.ewr1.vultrobjects.com/aravec/full_grams_cbow_100_twitter.zip) into a directory called "models" and unzip the file, after that move the models to live in the models directory, instead of models/full_grams_cbow_100_twitter
+> **Suggestion:** Use OpenAI's Chatbot instead of Google's, it yields much better results (gpt-4o to be precise)
+
+---
 
 ## Prerequisites
-
 - Python 3.11+
 - Docker (for containerized deployment)
 - API Keys:
-  - Google Generative AI API key
+  - Google Generative AI API key (If using OpenAI's LLM Model, then use an OpenAI API key instead)
   - Pinecone API key
 
 ## Installation
 
-### Local Development
+### For Development and code maintenance
 
-1. Create and activate virtual environment:
+1. Create and activate a virtual environment:
 ```bash
 # Clone the repo
 git clone https://github.com/MarwanMohammed2500/volunteers-rabwah-rag-system.git
@@ -60,14 +64,15 @@ pip install -r requirements.txt
 
 3. Create `.env` file with your API keys:
 ```env
-GOOGLE_API_KEY=your_google_api_key
+GOOGLE_API_KEY=your_google_api_key (OR OPENAI_API_KEY=your_openai_api_key)
 PINECONE_API_KEY=your_pinecone_api_key
 ```
 
 4. Run the applications:
 ```bash
 # In separate terminals
-sudo docker compose -f Docker/docker-compose.yml up
+cd volunteers-rabwah-rag-system/Docker
+sudo docker compose up
 ```
 
 ## Usage
@@ -78,7 +83,7 @@ sudo docker compose -f Docker/docker-compose.yml up
 - Monitor document processing status
 - Manage knowledge base content
 
-### User Interface (ragbot.com)
+### User Interface
 - Natural language Q&A
 - Context-aware conversations
 - Knowledge-based responses
@@ -110,18 +115,20 @@ Customize these parameters in the respective files:
 
 1. **Pinecone Index** (`Vector_db.py`):
    ```python
-   index_name = "non-profit-rag"  # Change index name as needed
+   index_name = "non-profit-rag"  # Change index name if needed
    vect_length = 768              # Match your embedding model
    ```
 
 2. **Search Parameters** (`ai_agent.py`/`full_chain.py`):
    ```python
    search_kwargs={
-       "k": 5,                   # Number of results
+       "k": 10,                  # Number of results
        "fetch_k": 10,            # Initial pool size
-       "alpha": 0.5              # MMR diversity parameter
+       "score_threshold": 0.3    # MMR diversity parameter
    }
    ```
+
+---
 
 ## Troubleshooting
 
@@ -132,13 +139,12 @@ Customize these parameters in the respective files:
    - Verify keys have proper permissions
 
 2. **Pinecone Index Not Found**:
-   - Run `create_index()` from `Vector_db.py` first
+   - Run `create_index()` from `Vector_db.py` first (Uploading files automatically creates an index though if the index doesn't exist)
 
 3. **Document Processing Failures**:
    - Check file formats (supports PDF, DOCX, TXT)
    - Verify URL accessibility
 
 ## Contact
-
 Project Maintainer: [Osama Abo bakr](mailto:osamaoabobakr12@gmail.com)  
 Portofolio: [Portofolio](https://osama-abo-bakr.vercel.app/)

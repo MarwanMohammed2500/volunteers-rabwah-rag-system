@@ -28,9 +28,8 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   };
 
   const quickActions = [
-    "الفرص التطوعية المتاحة",
-    "ساعات التطوع",
-    "كيفية التسجيل",
+    "ما هي الاخلاقيات المذمومة بالتطوع؟",
+    "تعريف التطوع",
   ];
 
   return (

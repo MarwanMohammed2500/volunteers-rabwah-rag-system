@@ -6,14 +6,13 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install gcc python3-dev supervisor gfortran build-essential pkg-config -y --no-install-recommends &&\
+    apt-get install gcc python3-dev supervisor -y --no-install-recommends &&\
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --upgrade numpy && pip install gensim
 
 # Copy the rest of the application
 COPY . .
