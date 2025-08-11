@@ -140,3 +140,6 @@ Customize these parameters in the respective files:
 ## Contact
 Project Maintainer: [Osama Abo bakr](mailto:osamaoabobakr12@gmail.com)  
 Portofolio: [Portofolio](https://osama-abo-bakr.vercel.app/)
+
+# Important Notes
+Please update all API Keys to Rabwah's own API Keys, that means changing Pinecone's API key and google/openai api key
