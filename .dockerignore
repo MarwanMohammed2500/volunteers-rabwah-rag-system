@@ -2,3 +2,4 @@
 frontend/
 Docker/
 models/
+__pycache__/

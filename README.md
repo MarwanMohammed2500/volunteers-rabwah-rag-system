@@ -47,14 +47,6 @@ A Retrieval-Augmented Generation (RAG) system designed to provide intelligent cu
 # Clone the repo
 git clone https://github.com/MarwanMohammed2500/volunteers-rabwah-rag-system.git
 cd volunteers-rabwah-rag-system
-
-# Prepare the virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-```
-OR
-```bash
-.\venv\Scripts\activate  # Windows
 ```
 
 2. Install dependencies:
