@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertChatMessageSchema } from "@shared/schema";
+import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 interface ChatMessage {
   human?: string;
@@ -26,7 +30,7 @@ async function getRagChatbotResponse(
 
     console.log("[INFO] Sending to FastAPI:", JSON.stringify(payload, null, 2));
 
-    const response = await fetch(`http://fastapi:8080/api/chat/${sessionId}/message`, {
+    const response = await fetch(`${process.env.RAG_ENDPOINT}/api/chat/${sessionId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

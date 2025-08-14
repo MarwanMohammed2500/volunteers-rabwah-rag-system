@@ -27,4 +27,4 @@ EXPOSE 8080
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 # Run the application
-CMD ["python3", "run_server.py"]
+CMD ["python3", "main.py"]
