@@ -12,7 +12,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGener
 _ = load_dotenv(override=True)
 
 def create_retriever_chain(vectorstore):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 10, "fetch_k": 10, "score_threshold": 0.3})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 5, "fetch_k": 8, "score_threshold": 0.3})
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", 
                                  api_key=os.getenv('GOOGLE_API_KEY', ""))
