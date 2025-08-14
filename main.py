@@ -5,13 +5,14 @@ from models import ChatRequest
 from src.utils.full_chain import get_response
 from dotenv import load_dotenv
 import uvicorn
+import os
 
 _ = load_dotenv(override=True)
 allow_origins = os.getenv("ALLOW_ORIGINS", [])
 allow_credentials = os.getenv("ALLOW_CREDENTIALS", True)
 allow_methods = os.getenv("ALLOW_METHODS", True)
 allow_headers = os.getenv("ALLOW_HEADERS", True)
-port = os.getenv("PORT", 8080)
+port = int(os.getenv("PORT", 8080))
 host = os.getenv("HOST", "0.0.0.0")
 
 app = FastAPI()

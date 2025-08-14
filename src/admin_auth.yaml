@@ -1,0 +1,8 @@
+credentials:
+  usernames:
+    admin1:
+      name: "Admin 1"
+      password: $2b$12$ih/XMSS1lrqYTuq7aOvIWu2CMYU9LuZpCqcHUW2Q/PDY/sn6SWgOy
+cookie:
+  expiry_days: "30"
+  key: "4aee812879eaad7fb5e364872afdd090"

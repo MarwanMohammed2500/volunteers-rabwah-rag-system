@@ -142,4 +142,6 @@ Project Maintainer: [Osama Abo bakr](mailto:osamaoabobakr12@gmail.com)
 Portofolio: [Portofolio](https://osama-abo-bakr.vercel.app/)
 
 # Important Notes
-Please update all API Keys to Rabwah's own API Keys, that means changing Pinecone's API key and google/openai api key
+- Please update all API Keys to Rabwah's own API Keys, that means changing Pinecone's API key and google/openai api key
+- Admin panel username: admin1 | Admin panel password: ragadminuser2025
+To change the admin creds, please modify src/admin_auth.yaml
