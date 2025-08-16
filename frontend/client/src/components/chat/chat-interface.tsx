@@ -7,10 +7,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { ChatMessage } from "@shared/schema";
 import { Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { randomUUID } from "crypto";
+import { v4 as uuidv4 } from 'uuid';
 
 export function ChatInterface() {
-  const [sessionId] = useState(() => randomUUID());
+  const [sessionId] = useState(() => uuidv4());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
