@@ -1,2 +1,6 @@
 *.md
 .gitignore
+Dockerfile
+package-for-download.md
+README.md
+DEPLOYMENT_GUIDE.md

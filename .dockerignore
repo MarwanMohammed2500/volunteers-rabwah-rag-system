@@ -3,3 +3,5 @@ frontend/
 Docker/
 models/
 __pycache__/
+tatawo3/
+Dockerfile
