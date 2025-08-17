@@ -1,32 +1,26 @@
 services:
-  fastapi:
+  backend:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: fastapi-backend
+    container_name: backend
     ports:
     - "8080:8080"
+    - "8000:8000"
     networks:
     - rag-app
   
-  node:
+  frontend:
     build:
       context: ../frontend/
       dockerfile: Dockerfile
-    container_name: node-frontend
+    container_name: frontend
     ports:
     - "80:5000"
     networks:
     - rag-app
     depends_on:
-    - fastapi
-  
-  admin:
-    build: ..
-    ports:
-      - "8000:8000"
-    container_name: admin-panel
-    command: streamlit run src/admin_ui.py --server.port=8000 --server.baseUrlPath=/admin
+    - backend
 
 networks:  
   rag-app:

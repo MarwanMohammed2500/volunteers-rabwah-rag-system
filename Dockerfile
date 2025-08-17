@@ -24,7 +24,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 8080
 
 # Command to run supervisor
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 # Run the application
-CMD ["python3", "main.py"]
+# CMD ["python3", "main.py"]

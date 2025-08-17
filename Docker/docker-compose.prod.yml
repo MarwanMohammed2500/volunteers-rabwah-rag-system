@@ -1,0 +1,23 @@
+services:
+  backend:
+    image: marwanmohammed2500/rabwah-rag-system:backend
+    container_name: backend
+    ports:
+    - "8080:8080"
+    - "8000:8000"
+    networks:
+    - rag-app
+
+  frontend:
+    image: marwanmohammed2500/rabwah-rag-system:frontend
+    container_name: frontend
+    ports:
+    - "80:5000"
+    networks:
+    - rag-app
+    depends_on:
+    - backend
+
+networks:
+  rag-app:
+    driver: bridge
