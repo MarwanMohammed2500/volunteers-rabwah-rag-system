@@ -1,15 +1,26 @@
 services:
   backend:
-    image: marwanmohammed2500/rabwah-rag-system:backend
+    image: marwanmohammed2500/rabwah-rag-system:backend-latest
     container_name: backend
     ports:
     - "8080:8080"
     - "8000:8000"
     networks:
     - rag-app
+    deploy:
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   frontend:
-    image: marwanmohammed2500/rabwah-rag-system:frontend
+    image: marwanmohammed2500/rabwah-rag-system:frontend-latest
     container_name: frontend
     ports:
     - "80:5000"
@@ -17,6 +28,11 @@ services:
     - rag-app
     depends_on:
     - backend
+    deploy:
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
 
 networks:
   rag-app:

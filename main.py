@@ -48,6 +48,10 @@ async def chat_endpoint(session_id: str, request: ChatRequest):
         print("[ERROR] Error processing chat:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/health")
+def health_check():
+    return JSONResponse({"response": True})
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
