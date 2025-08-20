@@ -80,6 +80,15 @@ sudo docker compose up
 - Context-aware conversations
 - Knowledge-based responses
 
+### Admin Credentials
+Username: admin1 | Password: ragadminuser2025
+To change the admin creds, please modify src/admin_auth.yaml, to change creds the password, make sure to run this python script first:
+```python
+import streamlit_authenticator as stauth # pip install streamlit-authenticator first
+hashed_pass = stauth.Hasher().hash("your-password-here")
+print(hashed_pass) # This output is what you should use in admin_auth.yaml
+```
+
 ## File Structure
 
 ```
@@ -138,10 +147,8 @@ Customize these parameters in the respective files:
    - Verify URL accessibility
 
 ## Contact
-Project Maintainer: [Osama Abo bakr](mailto:osamaoabobakr12@gmail.com)  
-Portofolio: [Portofolio](https://osama-abo-bakr.vercel.app/)
+Project Maintainer: [Marwan Mohammed](mailto:marwanmohammed056@gmail.com)  
+[Portfolio](https://marwan-mohammed-portfoli-442cb.web.app/)
 
 # Important Notes
 - Please update all API Keys to Rabwah's own API Keys, that means changing Pinecone's API key and google/openai api key
-- Admin panel username: admin1 | Admin panel password: ragadminuser2025
-To change the admin creds, please modify src/admin_auth.yaml
