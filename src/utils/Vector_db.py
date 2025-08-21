@@ -101,10 +101,14 @@ def delete_vectors_by_source(source_name: str, namespace='__default__'):
             if metadata.get("source") == source_name:
                 matching_ids.append(vec_id)
 
-    logger.info(f"✅ Found {len(matching_ids)} vectors to delete.")
+    logger.info(f"[INFO] Found {len(matching_ids)} vectors to delete.")
 
     if matching_ids:
-        index.delete(ids=matching_ids, namespace=namespace)
-        print("Deletion complete.")
+        delete_batch_size = 1000
+        for i in range(0, len(matching_ids), delete_batch_size):
+            batch_to_delete = matching_ids[i : i + delete_batch_size]
+            index.delete(ids=batch_to_delete, namespace=namespace)
+            logger.info(f"[INFO] Deleted {len(batch_to_delete)} vectors...")
+        print("[SUCCESS] Deletion complete.")
     else:
         logger.info("No vectors found with that source.")
