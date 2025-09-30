@@ -7,6 +7,7 @@ from langchain.schema import Document
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from .exceptions import IndexNotFound
 
 # Load environment variables
 _ = load_dotenv(override=True)
@@ -37,8 +38,50 @@ def create_index(index_name: str='non-profit-rag', vect_length: int = 768):
         )
         logger.info(f'Done Creating Index: {index_name}')
 
+def ensure_namespace_exists(index_name: str, namespace: str) -> bool:
+    """
+    Checks if a namespace exists in the specified index.
+    
+    Args:
+        index_name (str): The name of the Pinecone index
+        namespace (str): The namespace to check
+    
+    Returns:
+        bool: True if namespace exists, False otherwise
+    """
+    pinecone = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ""))
+    index = pinecone.Index(index_name)
+    
+    existing_namespaces = index.list_namespaces()
+    namespace_exists = namespace in existing_namespaces
+    
+    if namespace_exists:
+        logger.info(f'✅ Namespace exists: {namespace}')
+    else:
+        logger.info(f'📝 Namespace does not exist: {namespace}')
+    
+    return namespace_exists
+
+def get_existing_namespaces(index_name: str = 'non-profit-rag') -> List[str]:
+    """
+    Returns list of existing namespaces in the specified index.
+    
+    Args:
+        index_name (str): The name of the Pinecone index
+        
+    Returns:
+        List[str]: List of namespace names
+    """
+    try:
+        pinecone = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ""))
+        index = pinecone.Index(index_name)
+        return list(index.list_namespaces())
+    except Exception as e:
+        logger.error(f"Error getting namespaces: {e}")
+        return []
+
 def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int=768, 
-                              documents: List[Document]=None):
+                              documents: List[Document]=None, namespace: str = None):
     """
     Adds a list of documents to a Pinecone index. If the index does not exist, it is created first.
 
@@ -46,6 +89,7 @@ def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int
         index_name (str): The name of the index to add the documents to. Defaults to 'non-profit-rag'.
         vect_length (int): The length of the vectors in the index. Defaults to 768.
         documents (List[Document], optional): The list of documents to add to the index. Defaults to None.
+        namespace (str, optional): The namespace to add documents to. Defaults to None.
 
     Returns:
         None
@@ -70,16 +114,39 @@ def add_documents_to_pinecone(index_name: str='non-profit-rag', vect_length: int
             
             create_index(index_name=index_name, vect_length=vect_length)
             logger.info("✅ Successfully created the index in Pinecone.")
+            
+        # Check if namespace exists (just for logging)
+        namespace_exists = ensure_namespace_exists(index_name, namespace) if namespace else False
+        if namespace and not namespace_exists:
+            logger.info(f'🆕 Will create namespace: {namespace} when adding documents')
+        
+        vector_store_kwargs = {
+            "index_name": index_name,
+            "embedding": embedding_model,
+            "pinecone_api_key": os.getenv('PINECONE_API_KEY', "")
+        }
 
-            logger.info("✅ Successfully created the index in Pinecone.")
-
-        vector_store = PineconeVectorStore(
-            index_name=index_name,
-            embedding=embedding_model,
-            pinecone_api_key=os.getenv('PINECONE_API_KEY', "")
-        )
-        vector_store.add_documents(documents=documents)
-        logger.info("✅ Successfully added new documents to Pinecone.")
+        if namespace:
+            vector_store_kwargs["namespace"] = namespace
+        
+        vector_store = PineconeVectorStore(**vector_store_kwargs)
+        
+        # Only add documents if we have actual content (not empty)
+        if documents and len(documents) > 0 and documents[0].page_content.strip():
+            vector_store.add_documents(documents=documents)
+            action = "created and added to" if namespace and not namespace_exists else "added to"
+            logger.info(f"✅ Successfully {action} namespace: {namespace}")
+        else:
+            # For namespace creation with empty docs, we need to add at least one vector
+            if namespace and not namespace_exists:
+                # Create a minimal document to initialize the namespace
+                minimal_doc = Document(
+                    page_content="Namespace initialization document",
+                    metadata={"source": "system", "purpose": "namespace_init"}
+                )
+                vector_store.add_documents(documents=[minimal_doc])
+                logger.info(f"✅ Created namespace: {namespace} with initialization vector")
+        
     except Exception as e:
         logger.error(f"❌ An error occurred while adding new documents to Pinecone: {e}", exc_info=True)
 
@@ -112,3 +179,8 @@ def delete_vectors_by_source(source_name: str, namespace='__default__'):
         print("[SUCCESS] Deletion complete.")
     else:
         logger.info("No vectors found with that source.")
+
+if __name__ == "__main__":
+    create_index()
+    create_namespace("name")
+    
