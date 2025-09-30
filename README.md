@@ -117,7 +117,7 @@ Customize these parameters in the respective files:
 1. **Pinecone Index** (`Vector_db.py`):
    ```python
    index_name = "non-profit-rag"  # Change index name if needed
-   vect_length = 768              # Match your embedding model
+   vect_length = 384              # Match your embedding model
    ```
 
 2. **Search Parameters** (`ai_agent.py`/`full_chain.py`):
