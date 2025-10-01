@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import uvicorn
 import os
 
-_ = load_dotenv(override=True)
+load_dotenv(override=True)
 allow_origins = os.getenv("ALLOW_ORIGINS", [])
 allow_credentials = os.getenv("ALLOW_CREDENTIALS", True)
 allow_methods = os.getenv("ALLOW_METHODS", True)
