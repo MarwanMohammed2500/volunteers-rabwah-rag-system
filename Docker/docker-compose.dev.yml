@@ -1,10 +1,22 @@
 services:
+  redis_server:
+    image: redis:alpine
+    container_name: redis_server
+    networks:
+    - rag-app
+    ports:
+    - "6379:6379"
+    volumes:
+    - redis_data:/data
+    - ./redis.conf:/etc/redis/redis.conf:ro
+    command: redis-server /etc/redis/redis.conf
+
   backend:
     build:
       context: ..
       dockerfile: Dockerfile
     container_name: rabwah-backend
-    image_name: rabwah-backend
+    image: rabwah-backend
     ports:
     - "8080:8080"
     - "8000:8000"
@@ -16,13 +28,17 @@ services:
       context: ../frontend/
       dockerfile: Dockerfile
     container_name: rabwah-frontend
-    image_name: rabwah-frontend
+    image: rabwah-frontend
     ports:
     - "80:5000"
     networks:
     - rag-app
     depends_on:
     - backend
+
+volumes:
+  redis_data:
+    driver: local
 
 networks:  
   rag-app:

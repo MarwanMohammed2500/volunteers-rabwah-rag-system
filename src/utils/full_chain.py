@@ -10,13 +10,19 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGener
 # Load environment variables
 _ = load_dotenv(override=True)
 
-def create_retriever_chain(vectorstore):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5, "fetch_k": 8, "score_threshold": 0.3})
+def create_retriever_chain(vectorstore, namespace: str = None):
+    # Create retriever with optional namespace
+    search_kwargs = {"k": 5, "fetch_k": 8, "score_threshold": 0.3}
+    
+    # Add namespace to search kwargs if provided
+    if namespace:
+        search_kwargs["namespace"] = namespace
+    
+    retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", 
                                  api_key=os.getenv('GOOGLE_API_KEY', ""))
 
-    # llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     template = """
     You are a professional and knowledgeable AI assistant helping users retrieve information from a book.
 
@@ -68,7 +74,7 @@ embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
 vector_db = PineconeVectorStore(embedding=embedding_model, index_name=index_name)
 
 
-def get_response(user_query, chat_history):
+def get_response(user_query, chat_history, namespace: str = None):
     processed_history = []
     for msg in chat_history:
         if "human" in msg:
@@ -76,7 +82,7 @@ def get_response(user_query, chat_history):
         elif "ai" in msg:
             processed_history.append(("ai", msg["ai"]))
     
-    load_qa_chain = create_retriever_chain(vectorstore=vector_db)
+    load_qa_chain = create_retriever_chain(vectorstore=vector_db, namespace=namespace)
     
     result = load_qa_chain.invoke(
                 {

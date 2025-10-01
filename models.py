@@ -8,6 +8,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     content: str
     chat_history: List[Dict[str, str]] = []
+    namespace: str = None
 
 class ChatResponse(BaseModel):
     response: str

@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from models import ChatRequest
 from src.utils.full_chain import get_response
+from typing import AsyncGenerator
+from src.utils.redis import chat_history_manager
 from dotenv import load_dotenv
 import uvicorn
 import os
@@ -24,29 +27,62 @@ app.add_middleware(
     allow_headers=allow_headers,
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Startup: Initialize resources
+    print("🚀 Starting up FastAPI application...")
+    
+    # Test Redis connection on startup
+    try:
+        await chat_history_manager.redis  # This will initialize the connection
+        print("✅ Redis connection established")
+    except Exception as e:
+        print(f"❌ Redis connection failed: {e}")
+    
+    yield  # This is where the application runs
+    
+    # Shutdown: Clean up resources
+    print("🛑 Shutting down FastAPI application...")
+    await chat_history_manager.close()
+    print("✅ Redis connection closed")
+
 @app.post("/api/chat/{session_id}/message")
 async def chat_endpoint(session_id: str, request: ChatRequest):
     try:
-        rag_history = [
-            f"{'Human' if 'human' in msg else 'AI'}: {list(msg.values())[0]}"
-            for msg in request.chat_history
-        ]
-        print("[INFO] Prepared chat history")
+        # Get chat history using our direct Redis manager
+        rag_history = await chat_history_manager.get_messages_as_text(session_id)
+        print(f"[INFO] Retrieved {len(rag_history)} messages from history for session {session_id}")
+        print(f"[INFO] Using namespace: {request.namespace}")
 
-        rag_response = get_response(
-            user_query=request.content,
-            chat_history=rag_history
+        # Process the chat
+        rag_response = await asyncio.get_event_loop().run_in_executor(
+            None,
+            get_response,
+            request.content,
+            rag_history,
+            request.namespace
         )
+        
         print(f"[INFO] response: {rag_response['answer']}")
+
+        # Save both messages using our direct Redis manager
+        await chat_history_manager.add_human_message(session_id, request.content)
+        await chat_history_manager.add_ai_message(session_id, rag_response['answer'])
 
         return JSONResponse({
             "response": rag_response['answer'],
-            "session_id": session_id
+            "session_id": session_id,
+            "namespace": request.namespace
         })
 
     except Exception as e:
-        print("[ERROR] Error processing chat:", str(e))
+        print(f"[ERROR] Error processing chat for session {session_id}:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close Redis connection on app shutdown"""
+    await chat_history_manager.close()
 
 @app.get("/health")
 def health_check():

@@ -78,7 +78,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         sparse-checkout: |
-          Docker/docker-compose.prod.yaml
+          Docker/docker-compose.prod.yaml, redis.conf, .env.redis
         sparse-checkout-cone-mode: false
     
     # Copy necessary files into the server
@@ -88,7 +88,7 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "Docker/docker-compose.prod.yaml"
+        source: "Docker/docker-compose.prod.yaml, redis.conf, .env.redis"
         target: "~/"
 
     # SSH To server, pull images, run the containers, cleanup

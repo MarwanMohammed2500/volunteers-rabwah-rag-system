@@ -1,8 +1,19 @@
 services:
+  redis_server:
+    image: redis:alpine
+    container_name: redis_server
+    networks:
+    - rag-app
+    ports:
+    - "6379:6379"
+    volumes:
+    - redis_data:/data
+    command: redis-server /etc/redis/redis.conf
+
   backend:
-    image: marwanmohammed2500/rabwah-rag-system:backend-latest
+    image: marwanmohammed2500/rabwah-rag-system:rabwah-backend-latest
     container_name: rabwah-backend
-    image_name: rabwah-backend
+    image: rabwah-backend
     ports:
     - "8080:8080"
     - "8000:8000"
@@ -21,9 +32,9 @@ services:
       start_period: 30s
 
   frontend:
-    image: marwanmohammed2500/rabwah-rag-system:frontend-latest
+    image: marwanmohammed2500/rabwah-rag-system:rabwah-frontend-latest
     container_name: rabwah-frontend
-    image_name: rabwah-frontend
+    image: rabwah-frontend
     ports:
     - "80:5000"
     networks:
@@ -35,6 +46,10 @@ services:
         parallelism: 1
         delay: 10s
         order: start-first
+
+volumes:
+  redis_data:
+    driver: local
 
 networks:
   rag-app:
