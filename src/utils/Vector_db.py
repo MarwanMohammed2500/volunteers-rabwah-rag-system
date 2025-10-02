@@ -77,17 +77,13 @@ def get_existing_namespaces(index_name: str = 'non-profit-rag') -> List[str]:
         pinecone = Pinecone(api_key=os.getenv('PINECONE_API_KEY', ""))
         index = pinecone.Index(index_name)
         
-        # Get the namespace objects
         namespace_objects = index.list_namespaces()
         
-        # Extract the namespace names from the objects
         namespace_names = []
         for ns_obj in namespace_objects:
-            # NamespaceDescription objects have a 'name' attribute
             if hasattr(ns_obj, 'name') and ns_obj.name:
                 namespace_names.append(ns_obj.name)
             else:
-                # Fallback: try to get the string representation
                 namespace_names.append(str(ns_obj))
         
         logger.info(f"📁 Found namespaces: {namespace_names}")

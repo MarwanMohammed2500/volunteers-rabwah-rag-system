@@ -47,14 +47,14 @@ class AsyncRedisChatManager:
             print(f"❌ Redis health check failed: {e}")
             return False
     
-    def _get_session_key(self, session_id: str) -> str:
+    def _get_session_key(self, session_id: str, namespace: str) -> str:
         """Generate Redis key for session"""
-        return f"chat:session:{session_id}"
+        return f"chat_history:{namespace}:{session_id}"
     
-    async def add_message(self, session_id: str, role: str, content: str):
+    async def add_message(self, session_id: str, namespace: str, role: str, content: str):
         """Add a message to chat history"""
         client = await self.redis
-        key = self._get_session_key(session_id)
+        key = self._get_session_key(session_id, namespace)
         
         message = {
             "role": role,
@@ -66,10 +66,10 @@ class AsyncRedisChatManager:
         await client.rpush(key, json.dumps(message))
         await client.expire(key, self.session_ttl)
     
-    async def get_messages(self, session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_messages(self, session_id: str, namespace: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Get all messages for a session"""
         client = await self.redis
-        key = self._get_session_key(session_id)
+        key = self._get_session_key(session_id, namespace)
         
         messages_json = await client.lrange(key, 0, limit - 1)
         messages = []
@@ -83,9 +83,9 @@ class AsyncRedisChatManager:
         
         return messages
     
-    async def get_messages_as_text(self, session_id: str) -> List[str]:
+    async def get_messages_as_text(self, session_id: str, namespace: str) -> List[str]:
         """Retrieve chat history in RAG-friendly text format"""
-        messages = await self.get_messages(session_id)
+        messages = await self.get_messages(session_id, namespace)
         
         rag_history = []
         for msg in messages:
@@ -95,18 +95,18 @@ class AsyncRedisChatManager:
         
         return rag_history
     
-    async def add_human_message(self, session_id: str, content: str):
+    async def add_human_message(self, session_id: str, namespace: str, content: str):
         """Add human message"""
-        await self.add_message(session_id, "human", content)
+        await self.add_message(session_id, namespace, "human", content)
     
     async def add_ai_message(self, session_id: str, content: str):
         """Add AI message"""
-        await self.add_message(session_id, "ai", content)
+        await self.add_message(session_id, namespace, "ai", content)
     
     async def clear_history(self, session_id: str):
         """Clear chat history for session"""
         client = await self.redis
-        key = self._get_session_key(session_id)
+        key = self._get_session_key(session_id, namespace)
         await client.delete(key)
     
     async def get_session_ids(self, pattern: str = "chat:session:*") -> List[str]:

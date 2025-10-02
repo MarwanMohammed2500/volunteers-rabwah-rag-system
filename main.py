@@ -6,12 +6,14 @@ from models import ChatRequest
 from src.utils.full_chain import get_response
 from typing import AsyncGenerator
 from src.utils.redis import chat_history_manager
+from src.utils.Vector_db import get_existing_namespaces
 from dotenv import load_dotenv
 import uvicorn
+import asyncio
 import os
 
 load_dotenv(override=True)
-allow_origins = os.getenv("ALLOW_ORIGINS", [])
+allow_origins = os.getenv("ALLOW_ORIGINS", ["http://localhost:5173", "http://frontend"])
 allow_credentials = os.getenv("ALLOW_CREDENTIALS", True)
 allow_methods = os.getenv("ALLOW_METHODS", True)
 allow_headers = os.getenv("ALLOW_HEADERS", True)
@@ -46,13 +48,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await chat_history_manager.close()
     print("✅ Redis connection closed")
 
-@app.post("/api/chat/{session_id}/message")
-async def chat_endpoint(session_id: str, request: ChatRequest):
+from typing import List, Dict, Any
+
+@app.get("/api/chat/namespaces")
+async def get_chat_namespaces():
+    """Return available chat namespace names"""
+    namespaces = get_existing_namespaces("non-profit-rag")
+    print(f"Returned namespaces: {namespaces}")
+    if len(namespaces) == 0:
+        return ["default"]
+    return namespaces
+
+@app.post("/api/chat/{namespace}/{session_id}/message")
+async def chat_endpoint(namespace: str, session_id: str, request: ChatRequest):
     try:
-        # Get chat history using our direct Redis manager
-        rag_history = await chat_history_manager.get_messages_as_text(session_id)
-        print(f"[INFO] Retrieved {len(rag_history)} messages from history for session {session_id}")
-        print(f"[INFO] Using namespace: {request.namespace}")
+        # Pass namespace to history manager methods
+        rag_history = await chat_history_manager.get_messages_as_text(session_id, namespace)
+        print(f"[INFO] Retrieved {len(rag_history)} messages from history for session {session_id}, namespace: {namespace}")
 
         # Process the chat
         rag_response = await asyncio.get_event_loop().run_in_executor(
@@ -60,29 +72,24 @@ async def chat_endpoint(session_id: str, request: ChatRequest):
             get_response,
             request.content,
             rag_history,
-            request.namespace
+            namespace
         )
         
         print(f"[INFO] response: {rag_response['answer']}")
 
-        # Save both messages using our direct Redis manager
-        await chat_history_manager.add_human_message(session_id, request.content)
-        await chat_history_manager.add_ai_message(session_id, rag_response['answer'])
+        # Save messages with namespace
+        await chat_history_manager.add_human_message(session_id, request.content, namespace)
+        await chat_history_manager.add_ai_message(session_id, rag_response['answer'], namespace)
 
         return JSONResponse({
             "response": rag_response['answer'],
             "session_id": session_id,
-            "namespace": request.namespace
+            "namespace": namespace
         })
 
     except Exception as e:
-        print(f"[ERROR] Error processing chat for session {session_id}:", str(e))
+        print(f"[ERROR] Error processing chat for session {session_id}, namespace {namespace}:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close Redis connection on app shutdown"""
-    await chat_history_manager.close()
 
 @app.get("/health")
 def health_check():

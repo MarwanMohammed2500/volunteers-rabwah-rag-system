@@ -13,7 +13,6 @@ services:
   backend:
     image: marwanmohammed2500/rabwah-rag-system:rabwah-backend-latest
     container_name: rabwah-backend
-    image: rabwah-backend
     ports:
     - "8080:8080"
     - "8000:8000"
@@ -34,7 +33,6 @@ services:
   frontend:
     image: marwanmohammed2500/rabwah-rag-system:rabwah-frontend-latest
     container_name: rabwah-frontend
-    image: rabwah-frontend
     ports:
     - "80:5000"
     networks:
