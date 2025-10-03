@@ -33,5 +33,12 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/api": {
+        target: "http://backend:8080", // FastAPI backend
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

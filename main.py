@@ -13,7 +13,7 @@ import asyncio
 import os
 
 load_dotenv(override=True)
-allow_origins = os.getenv("ALLOW_ORIGINS", ["http://localhost:5173", "http://frontend"])
+allow_origins = os.getenv("ALLOW_ORIGINS", ["http://localhost", "http://frontend"])
 allow_credentials = os.getenv("ALLOW_CREDENTIALS", True)
 allow_methods = os.getenv("ALLOW_METHODS", True)
 allow_headers = os.getenv("ALLOW_HEADERS", True)
@@ -56,8 +56,8 @@ async def get_chat_namespaces():
     namespaces = get_existing_namespaces("non-profit-rag")
     print(f"Returned namespaces: {namespaces}")
     if len(namespaces) == 0:
-        return {"namespaces": ["default"]}
-    return {"namespaces": namespaces}
+        return JSONResponse(content={"namespaces": ["default"]})
+    return JSONResponse(content={"namespaces": namespaces})
 
 @app.post("/api/chat/{namespace}/{session_id}/message")
 async def chat_endpoint(namespace: str, session_id: str, request: ChatRequest):

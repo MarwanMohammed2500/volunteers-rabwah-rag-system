@@ -71,29 +71,35 @@ var insertChatMessageSchema = createInsertSchema(chatMessages).pick({
 });
 
 // server/routes.ts
-async function getRagChatbotResponse(userMessage, sessionId, chat_history) {
-  try {
-    const payload = {
-      content: userMessage,
-      chat_history
-    };
-    console.log("\u{1F4E4} Sending to FastAPI:", JSON.stringify(payload, null, 2));
-    const response = await fetch(`http://localhost:8080/api/chat/${sessionId}/message`, {
+async function getRagChatbotResponse(
+  userMessage,
+  namespace,
+  sessionId,
+  chat_history
+) {
+  const payload = { content: userMessage, chat_history };
+
+  console.log("📤 Sending to FastAPI:", JSON.stringify(payload, null, 2));
+
+  const response = await fetch(
+    `http://backend:8080/api/chat/${namespace}/${sessionId}/message`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      throw new Error(`FastAPI responded with status: ${response.status}`);
+      body: JSON.stringify(payload),
     }
-    const data = await response.json();
-    console.log("\u{1F4E5} Received from FastAPI:", data);
-    return data.response;
-  } catch (error) {
-    console.error("RAG API error:", error);
-    throw error;
+  );
+
+  if (!response.ok) {
+    throw new Error(`FastAPI responded with status: ${response.status}`);
   }
+
+  const data = await response.json();
+  console.log("📥 Received from FastAPI:", data);
+
+  return data.response;
 }
+
 async function registerRoutes(app2) {
   app2.get("/api/chat/:sessionId/messages", async (req, res) => {
     try {

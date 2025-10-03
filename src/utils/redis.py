@@ -9,7 +9,7 @@ import os
 load_dotenv()
 
 # Redis configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis_server:6379")
 SESSION_TTL = int(os.getenv("SESSION_TTL", 86400))  # 24 hours
 
 class AsyncRedisChatManager:
