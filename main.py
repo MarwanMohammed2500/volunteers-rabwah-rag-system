@@ -56,8 +56,8 @@ async def get_chat_namespaces():
     namespaces = get_existing_namespaces("non-profit-rag")
     print(f"Returned namespaces: {namespaces}")
     if len(namespaces) == 0:
-        return ["default"]
-    return namespaces
+        return {"namespaces": ["default"]}
+    return {"namespaces": namespaces}
 
 @app.post("/api/chat/{namespace}/{session_id}/message")
 async def chat_endpoint(namespace: str, session_id: str, request: ChatRequest):
