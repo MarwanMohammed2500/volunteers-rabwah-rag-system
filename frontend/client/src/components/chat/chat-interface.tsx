@@ -8,13 +8,16 @@ import { ChatMessage } from "@shared/schema";
 import { Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { Sidebar } from "./sidebar"
+
 type Props = {
+  /**
+   * Optional user identifier. When provided the session id is namespaced per-user
+   * so multiple accounts on the same browser do not collide.
+   */
   userId?: string | null;
 };
 
 export function ChatInterface({ userId }: Props) {
-  const [activeNamespace, setActiveNamespace] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
@@ -41,17 +44,19 @@ export function ChatInterface({ userId }: Props) {
     }
   }, [sessionId, userId]);
 
+  // Fetch messages only after we have a session id.
   const { data: messages = [], isLoading, error } = useQuery<ChatMessage[]>({
-  queryKey: ["/api/chat", activeNamespace, sessionId, "messages"],
-  queryFn: async () => {
-    if (!sessionId || !activeNamespace) return [];
-    const res = await apiRequest("GET", `/api/chat/${activeNamespace}/${sessionId}/messages`);
-    if (!res.ok) throw new Error("Failed to fetch messages");
-    return res.json();
-  },
-  enabled: !!sessionId && !!activeNamespace,
-});
-
+    queryKey: ["/api/chat", sessionId, "messages"],
+    queryFn: async () => {
+      if (!sessionId) return [];
+      const res = await apiRequest("GET", `/api/chat/${sessionId}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    enabled: !!sessionId,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     console.log("🔄 Session ID:", sessionId);
@@ -60,15 +65,27 @@ export function ChatInterface({ userId }: Props) {
   }, [sessionId, messages]);
 
   const sendMessageMutation = useMutation({
-  mutationFn: async (content: string) => {
-    if (!sessionId || !activeNamespace) throw new Error("sessionId or namespace not set");
-    const response = await apiRequest("POST", `/api/chat/${activeNamespace}/${sessionId}/message`, { content });
-    return response.json();
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/chat", activeNamespace, sessionId, "messages"] });
-  },
-});
+    mutationFn: async (content: string) => {
+      if (!sessionId) throw new Error("sessionId not set");
+      console.log("📤 Sending message:", content);
+      const response = await apiRequest("POST", `/api/chat/${sessionId}/message`, { content });
+      const data = await response.json();
+      console.log("📥 Backend response:", data);
+      return data;
+    },
+    onSuccess: () => {
+      console.log("✅ Message sent successfully, refreshing chat...");
+      queryClient.invalidateQueries({ queryKey: ["/api/chat", sessionId, "messages"] });
+    },
+    onError: (error) => {
+      console.error("❌ Send message error:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في الإرسال",
+        description: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+      });
+    },
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,15 +95,6 @@ export function ChatInterface({ userId }: Props) {
     if (!messages) return;
     scrollToBottom();
   }, [messages]);
-
-  useEffect(() => {
-    queryClient.getQueryData<{ namespaces?: string[] }>(["/api/chat/namespaces"]);
-    const namespaces = queryClient.getQueryData<{ namespaces?: string[] }>(["/api/chat/namespaces"]);
-    if (!activeNamespace && namespaces?.namespaces?.length) {
-      setActiveNamespace(namespaces.namespaces[0]);
-    }
-  }, [activeNamespace, queryClient]);
-
 
   const handleSendMessage = (content: string) => {
     if (!sessionId) {
@@ -120,12 +128,6 @@ export function ChatInterface({ userId }: Props) {
   };
 
   return (
-    <div className="flex h-screen">
-      <Sidebar
-  activeNamespace={activeNamespace}
-  setActiveNamespace={(ns) => setActiveNamespace(ns)}
-/>
-
     <div className="flex flex-col h-screen bg-neutral-50">
       <Header />
 
@@ -204,7 +206,6 @@ export function ChatInterface({ userId }: Props) {
         </div>
         */}
       </div>
-    </div>
     </div>
   );
 }
