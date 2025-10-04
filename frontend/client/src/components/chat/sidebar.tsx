@@ -36,7 +36,6 @@ export function Sidebar({ activeNamespace, setActiveNamespace }: SidebarProps) {
 
   return (
     <div className="w-64 border-r border-neutral-200 bg-white h-full overflow-y-auto">
-      <div className="p-4 font-bold">DEBUG: Sidebar Mounted</div>
       <div className="p-4 font-bold">Namespaces</div>
       <ul>
         {namespaces.length > 0 ? (
