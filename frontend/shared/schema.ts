@@ -15,20 +15,26 @@ export const chatMessages = pgTable("chat_messages", {
   isBot: boolean("is_bot").notNull().default(false),
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
   sessionId: varchar("session_id").notNull(),
+  namespace: varchar("namespace").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+// export const insertUserSchema = createInsertSchema(users).pick({
+//   username: true,
+//   password: true,
+// });
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   content: true,
   isBot: true,
   sessionId: true,
+  // namespace: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type ChatMessage = Omit<typeof chatMessages.$inferSelect, "timestamp"> & {
+  timestamp: string;
+};

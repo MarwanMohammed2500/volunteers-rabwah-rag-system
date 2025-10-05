@@ -1,5 +1,8 @@
 import { type User, type InsertUser, type ChatMessage, type InsertChatMessage } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { RedisStorage } from "./redisStorage";
+
+export const storage = new RedisStorage(process.env.REDIS_URL || "redis://redis_server:6379");
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -40,18 +43,17 @@ export class MemStorage implements IStorage {
     const message: ChatMessage = { 
       ...insertMessage, 
       id,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       isBot: insertMessage.isBot ?? false,
     };
     this.chatMessages.set(id, message);
     return message;
   }
 
+
   async getChatMessages(sessionId: string): Promise<ChatMessage[]> {
     return Array.from(this.chatMessages.values())
       .filter(message => message.sessionId === sessionId)
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 }
-
-export const storage = new MemStorage();

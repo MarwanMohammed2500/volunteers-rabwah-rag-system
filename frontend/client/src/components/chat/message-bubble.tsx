@@ -9,10 +9,10 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isBot = message.isBot;
-  const timeAgo = formatDistanceToNow(new Date(message.timestamp), {
-    addSuffix: true,
-    locale: ar,
-  });
+  const timeAgo = message.timestamp && !isNaN(Date.parse(message.timestamp))
+  ? formatDistanceToNow(new Date(message.timestamp), { addSuffix: true, locale: ar })
+  : "";
+
 
   return (
     <div
@@ -42,7 +42,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               isBot ? "text-neutral-800" : "text-white"
             }`}
             dangerouslySetInnerHTML={{
-              __html: message.content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+              __html: (message.content ?? "")
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
             }}
           />
         </div>

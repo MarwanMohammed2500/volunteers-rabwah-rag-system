@@ -9,7 +9,6 @@ from langchain_pinecone import PineconeVectorStore
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.embeddings import HuggingFaceEmbeddings
 from .exceptions import IndexNotFound
-
 # Load environment variables
 _ = load_dotenv(override=True)
 
@@ -182,6 +181,6 @@ def delete_vectors_by_source(source_name: str, namespace='__default__'):
             batch_to_delete = matching_ids[i : i + delete_batch_size]
             index.delete(ids=batch_to_delete, namespace=namespace)
             logger.info(f"[INFO] Deleted {len(batch_to_delete)} vectors...")
-        print("[SUCCESS] Deletion complete.")
+        logger.info("[SUCCESS] Deletion complete.")
     else:
         logger.info("No vectors found with that source.")

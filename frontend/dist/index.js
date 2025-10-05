@@ -101,7 +101,7 @@ async function getRagChatbotResponse(
 }
 
 async function registerRoutes(app2) {
-  app2.get("/api/chat/:sessionId/messages", async (req, res) => {
+  app2.get("/api/chat/:sessionId/message", async (req, res) => {
     try {
       const { sessionId } = req.params;
       console.log(`\u{1F4CB} Fetching messages for session: ${sessionId}`);

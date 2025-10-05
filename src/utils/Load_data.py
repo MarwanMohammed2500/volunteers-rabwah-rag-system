@@ -6,7 +6,10 @@ from langchain.schema import Document
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (TextLoader, PyPDFLoader, Docx2txtLoader)
+import logging
 
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
+logger = logging.getLogger(__name__)
 # Load environment variables
 _ = load_dotenv(override=True)
 
@@ -105,6 +108,6 @@ def loading_data(file_paths: List[str]=None, url: str=None) -> list[Document]:
         full_doc.extend(loading_url(url))
     if file_paths is not None and len(file_paths) > 0:
         splitting_doc = splitting_documents(loading_documents(file_paths))
-        print(f"✅ Length of splitting_doc: {len(splitting_doc)}")
+        logger.info(f"✅ Length of splitting_doc: {len(splitting_doc)}")
         full_doc.extend(splitting_doc)
     return full_doc

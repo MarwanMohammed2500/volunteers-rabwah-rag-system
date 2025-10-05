@@ -15,14 +15,11 @@ export function Sidebar({ activeNamespace, setActiveNamespace }: SidebarProps) {
 
       const json = await res.json();
       console.log("✅ Namespaces data:", json);
-      console.log("✅ Raw response:", res);
       return json;
     },
     refetchOnWindowFocus: false,
     staleTime: Infinity,
   });
-
-  console.log("🔍 Sidebar render, raw data:", data);
 
   if (isLoading) return <div className="p-4">Loading namespaces...</div>;
   if (error) return <div className="p-4 text-red-500">Error loading namespaces</div>;

@@ -39,6 +39,19 @@ export function ChatInterface({ userId }: Props) {
     }
   }, [sessionId, userId]);
 
+  // restore active namespace from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedNamespace = localStorage.getItem("activeNamespace");
+    if (savedNamespace) setActiveNamespace(savedNamespace);
+  }, []);
+
+  // whenever activeNamespace changes, store it
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (activeNamespace) localStorage.setItem("activeNamespace", activeNamespace);
+  }, [activeNamespace]);
+
   // Messages query depends on both namespace and session
   const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat", activeNamespace, sessionId, "messages"],
@@ -46,7 +59,7 @@ export function ChatInterface({ userId }: Props) {
       if (!sessionId || !activeNamespace) return [];
       const res = await apiRequest(
         "GET",
-        `/api/chat/${activeNamespace}/${sessionId}/messages`
+        `/api/chat/${activeNamespace}/${sessionId}/message`
       );
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
@@ -55,32 +68,49 @@ export function ChatInterface({ userId }: Props) {
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
+  console.log("Session ID:", sessionId);
+  console.log("Active Namespace:", activeNamespace);
+  console.log("Messages:", messages);
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      if (!sessionId || !activeNamespace)
-        throw new Error("Missing session or namespace");
-      const response = await apiRequest(
-        "POST",
-        `/api/chat/${activeNamespace}/${sessionId}/message`,
-        { content }
-      );
-      if (!response.ok) throw new Error("Failed to send message");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/chat", activeNamespace, sessionId, "messages"],
-      });
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "خطأ في الإرسال",
-        description: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.",
-      });
-    },
-  });
+const sendMessageMutation = useMutation({
+  mutationFn: async (content: string) => {
+    if (!sessionId || !activeNamespace)
+      throw new Error("Missing session or namespace");
+
+    const res = await apiRequest(
+      "POST",
+      `/api/chat/${activeNamespace}/${sessionId}/message`,
+      { content }
+    );
+    if (!res.ok) throw new Error("Failed to send message");
+
+    // The backend returns both userMessage and botMessage
+    const data = await res.json();
+    return data; // contains { userMessage, botMessage }
+  },
+
+  onSuccess: (data) => {
+    if (!data?.userMessage || !data?.botMessage) return;
+
+    queryClient.setQueryData(
+      ["/api/chat", activeNamespace, sessionId, "messages"],
+      (old: ChatMessage[] = []) => [
+        ...old,
+        data.userMessage,
+        data.botMessage,
+      ]
+    );
+  },
+  onError: () => {
+    toast({
+      variant: "destructive",
+      title: "خطأ في الإرسال",
+      description: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+    });
+  },
+});
+
+
 
   const handleSendMessage = (content: string) => {
     if (!sessionId || !activeNamespace) {
