@@ -28,7 +28,7 @@ async function getRagChatbotResponse(
 ): Promise<string> {
   const payload = {
     content: userMessage,
-    chat_history
+    chat_history,
   };
 
   console.log("[INFO] Sending to FastAPI:", JSON.stringify(payload, null, 2));
@@ -51,8 +51,8 @@ async function getRagChatbotResponse(
   return data.response;
 }
 
-
 export async function registerRoutes(app: Express): Promise<Server> {
+  // POST /api/chat/:namespace/:sessionId/message
   app.post("/api/chat/:namespace/:sessionId/message", async (req, res) => {
     const { namespace, sessionId } = req.params;
     const { content } = insertChatMessageSchema.omit({ sessionId: true }).parse(req.body);
@@ -64,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       namespace,
     });
 
-    const allMessages = await storage.getChatMessages(sessionId);
+    const allMessages = await storage.getChatMessages(sessionId, namespace);
     const chat_history = allMessages.map(msg =>
       msg.isBot ? { ai: msg.content } : { human: msg.content }
     );
@@ -84,27 +84,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       namespace,
     });
 
-  res.json({ userMessage, botMessage });
-});
+    res.json({ userMessage, botMessage });
+  });
 
+  // GET /api/chat/:namespace/:sessionId/message
+  app.get("/api/chat/:namespace/:sessionId/message", async (req, res) => {
+    const { namespace, sessionId } = req.params;
 
-  app.get("/api/chat/namespaces", async (_req, res) => {
-  try {
-    const response = await fetch(`${process.env.RAG_ENDPOINT}/api/chat/namespaces`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      const response = await fetch(
+        `${process.env.RAG_ENDPOINT}/api/chat/${namespace}/${sessionId}/message`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    if (!response.ok) {
-      throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("[ERROR] Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
     }
+  });
 
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error("[ERROR] Error fetching namespaces:", error);
-    res.status(500).json({ message: "Failed to fetch namespaces" });
-  }
-});
+  // GET /api/chat/namespaces
+  app.get("/api/chat/namespaces", async (_req, res) => {
+    try {
+      const response = await fetch(`${process.env.RAG_ENDPOINT}/api/chat/namespaces`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("[ERROR] Error fetching namespaces:", error);
+      res.status(500).json({ message: "Failed to fetch namespaces" });
+    }
+  });
+
   return createServer(app);
 }

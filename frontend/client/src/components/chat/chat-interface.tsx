@@ -52,9 +52,10 @@ export function ChatInterface({ userId }: Props) {
     if (activeNamespace) localStorage.setItem("activeNamespace", activeNamespace);
   }, [activeNamespace]);
 
-  // Messages query depends on both namespace and session
+  const queryKey = ["/api/chat", activeNamespace, sessionId, "messages"];
+
   const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat", activeNamespace, sessionId, "messages"],
+    queryKey,
     queryFn: async () => {
       if (!sessionId || !activeNamespace) return [];
       const res = await apiRequest(
@@ -62,7 +63,8 @@ export function ChatInterface({ userId }: Props) {
         `/api/chat/${activeNamespace}/${sessionId}/message`
       );
       if (!res.ok) throw new Error("Failed to fetch messages");
-      return res.json();
+      const data = await res.json();
+      return data.messages || [];  // Extract the array, default to [] if missing
     },
     enabled: !!sessionId && !!activeNamespace,
     staleTime: 0,
@@ -72,45 +74,48 @@ export function ChatInterface({ userId }: Props) {
   console.log("Active Namespace:", activeNamespace);
   console.log("Messages:", messages);
 
-const sendMessageMutation = useMutation({
-  mutationFn: async (content: string) => {
-    if (!sessionId || !activeNamespace)
-      throw new Error("Missing session or namespace");
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!sessionId || !activeNamespace)
+        throw new Error("Missing session or namespace");
 
-    const res = await apiRequest(
-      "POST",
-      `/api/chat/${activeNamespace}/${sessionId}/message`,
-      { content }
-    );
-    if (!res.ok) throw new Error("Failed to send message");
+      const res = await apiRequest(
+        "POST",
+        `/api/chat/${activeNamespace}/${sessionId}/message`,
+        { content }
+      );
+      if (!res.ok) throw new Error("Failed to send message");
 
-    // The backend returns both userMessage and botMessage
-    const data = await res.json();
-    return data; // contains { userMessage, botMessage }
-  },
-
-  onSuccess: (data) => {
-    if (!data?.userMessage || !data?.botMessage) return;
-
-    queryClient.setQueryData(
-      ["/api/chat", activeNamespace, sessionId, "messages"],
-      (old: ChatMessage[] = []) => [
-        ...old,
-        data.userMessage,
-        data.botMessage,
-      ]
-    );
-  },
-  onError: () => {
-    toast({
-      variant: "destructive",
-      title: "خطأ في الإرسال",
-      description: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.",
-    });
-  },
-});
-
-
+      const data = await res.json();
+      return data;  // Now returns the full backend response
+    },
+    onMutate: async (content: string) => {
+      const previous = queryClient.getQueryData<ChatMessage[]>(queryKey) || [];
+      const optimisticMessage: ChatMessage = {
+        id: `temp-${Math.random()}`,
+        content,
+        isBot: false,
+        timestamp: new Date().toISOString(),
+        sessionId: sessionId!,
+        namespace: activeNamespace!,
+      };
+      queryClient.setQueryData<ChatMessage[]>(queryKey, [...previous, optimisticMessage]);
+      return { previous };
+    },
+    onSuccess: (data, content, context) => {
+      queryClient.setQueryData<ChatMessage[]>(queryKey, data.messages);
+    },
+    onError: (error, content, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<ChatMessage[]>(queryKey, context.previous);
+      }
+      toast({
+        variant: "destructive",
+        title: "خطأ في الإرسال",
+        description: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+      });
+    },
+  });
 
   const handleSendMessage = (content: string) => {
     if (!sessionId || !activeNamespace) {

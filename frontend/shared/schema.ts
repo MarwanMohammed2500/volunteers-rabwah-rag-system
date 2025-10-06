@@ -18,20 +18,20 @@ export const chatMessages = pgTable("chat_messages", {
   namespace: varchar("namespace").notNull(),
 });
 
-// export const insertUserSchema = createInsertSchema(users).pick({
-//   username: true,
-//   password: true,
-// });
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   content: true,
   isBot: true,
   sessionId: true,
-  // namespace: true,
+  namespace: true,
 });
 
 
-// export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 

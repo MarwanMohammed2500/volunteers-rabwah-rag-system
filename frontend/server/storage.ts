@@ -9,7 +9,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  getChatMessages(sessionId: string): Promise<ChatMessage[]>;
+  getChatMessages(sessionId: string, namespace: string): Promise<ChatMessage[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -40,20 +40,20 @@ export class MemStorage implements IStorage {
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
     const id = randomUUID();
-    const message: ChatMessage = { 
-      ...insertMessage, 
+    const message: ChatMessage = {
+      ...insertMessage,
       id,
       timestamp: new Date().toISOString(),
       isBot: insertMessage.isBot ?? false,
+      namespace: insertMessage.namespace || "default",
     };
     this.chatMessages.set(id, message);
     return message;
   }
 
-
-  async getChatMessages(sessionId: string): Promise<ChatMessage[]> {
+  async getChatMessages(sessionId: string, namespace: string): Promise<ChatMessage[]> {
     return Array.from(this.chatMessages.values())
-      .filter(message => message.sessionId === sessionId)
+      .filter(message => message.sessionId === sessionId && message.namespace === namespace)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 }

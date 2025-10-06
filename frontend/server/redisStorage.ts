@@ -39,6 +39,7 @@ export class RedisStorage {
       id,
       timestamp: new Date().toISOString(),
       isBot: insertMessage.isBot ?? false,
+      namespace: insertMessage.namespace || "None",
     };
 
     const key = `chat_history:${insertMessage.namespace}:${insertMessage.sessionId}`;
@@ -48,8 +49,8 @@ export class RedisStorage {
     return message;
   }
 
-  async getChatMessages(sessionId: string): Promise<ChatMessage[]> {
-    const key = `chat_history:${sessionId}`;
+  async getChatMessages(sessionId: string, namespace: string): Promise<ChatMessage[]> {
+    const key = `chat_history:${namespace}:${sessionId}`;
     const messages = await this.redis.lrange(key, 0, -1);
     return messages.map(msg => JSON.parse(msg));
   }
