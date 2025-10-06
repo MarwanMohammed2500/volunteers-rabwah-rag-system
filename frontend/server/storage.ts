@@ -1,7 +1,10 @@
 import { type User, type InsertUser, type ChatMessage, type InsertChatMessage } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { RedisStorage } from "./redisStorage";
+import path from "path";
+import dotenv from "dotenv";
 
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 export const storage = new RedisStorage(process.env.REDIS_URL || "redis://redis_server:6379");
 
 export interface IStorage {
