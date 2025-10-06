@@ -15,7 +15,7 @@ export const chatMessages = pgTable("chat_messages", {
   isBot: boolean("is_bot").notNull().default(false),
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
   sessionId: varchar("session_id").notNull(),
-  namespace: varchar("namespace").notNull(),
+  namespace: varchar("namespace").notNull(),  // Required in table and stored objects
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -23,18 +23,23 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
+// Base insert schema without namespace (optional in input)
+const baseInsertChatMessageSchema = createInsertSchema(chatMessages).pick({
   content: true,
   isBot: true,
   sessionId: true,
-  namespace: true,
+}).extend({
+  namespace: z.string().optional(),  // Make optional for incoming validation
 });
 
+export const insertChatMessageSchema = baseInsertChatMessageSchema;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Insert type allows optional namespace
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
+// Output type requires namespace (for stored/fetch data)
 export type ChatMessage = Omit<typeof chatMessages.$inferSelect, "timestamp"> & {
   timestamp: string;
 };
+export type User = typeof users.$inferSelect;

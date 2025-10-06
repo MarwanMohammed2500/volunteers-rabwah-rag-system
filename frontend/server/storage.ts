@@ -8,8 +8,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  getChatMessages(sessionId: string, namespace: string): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage & { namespace?: string }): Promise<ChatMessage>;
+  getChatMessages(sessionId: string, namespace?: string): Promise<ChatMessage[]>;
 }
 
 export class MemStorage implements IStorage {

@@ -55,16 +55,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/chat/:namespace/:sessionId/message
   app.post("/api/chat/:namespace/:sessionId/message", async (req, res) => {
     const { namespace, sessionId } = req.params;
-    const { content } = insertChatMessageSchema.omit({ sessionId: true }).parse(req.body);
+    const { content, isBot } = insertChatMessageSchema.omit({ sessionId: true }).parse(req.body);
 
     const userMessage = await storage.createChatMessage({
       content,
-      isBot: false,
+      isBot: isBot ?? false,
       sessionId,
-      namespace,
+      namespace, // Use namespace from URL params
     });
 
     const allMessages = await storage.getChatMessages(sessionId, namespace);
+    console.log("[DEBUG] All Messages:", allMessages); // Debug log
     const chat_history = allMessages.map(msg =>
       msg.isBot ? { ai: msg.content } : { human: msg.content }
     );
@@ -81,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       content: botResponse,
       isBot: true,
       sessionId,
-      namespace,
+      namespace, // Use namespace from URL params
     });
 
     res.json({ userMessage, botMessage });

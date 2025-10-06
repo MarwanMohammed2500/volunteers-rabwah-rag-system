@@ -1,57 +1,68 @@
-import Redis from "ioredis";
-import { type ChatMessage, type InsertChatMessage, type User, type InsertUser } from "@shared/schema";
+import { Redis } from "ioredis";
+import { type User, type InsertUser, type ChatMessage, type InsertChatMessage } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-export class RedisStorage {
-  private redis: Redis;
+export interface IStorage {
+  getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  createChatMessage(message: InsertChatMessage & { namespace?: string }): Promise<ChatMessage>;
+  getChatMessages(sessionId: string, namespace?: string): Promise<ChatMessage[]>;
+}
 
-  constructor(redisUrl: string) {
-    this.redis = new Redis(redisUrl);
+export class RedisStorage implements IStorage {
+  private client: Redis;
+
+  constructor(url: string) {
+    this.client = new Redis(url);
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    const data = await this.redis.get(`user:${id}`);
-    return data ? JSON.parse(data) : undefined;
+    const user = await this.client.get(`user:${id}`);
+    return user ? JSON.parse(user) : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const keys = await this.redis.keys("user:*");
-    for (const key of keys) {
-      const data = await this.redis.get(key);
-      if (!data) continue;
-      const user: User = JSON.parse(data);
-      if (user.username === username) return user;
-    }
+    // Implement if needed (e.g., scan Redis for users)
     return undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { ...insertUser, id };
-    await this.redis.set(`user:${id}`, JSON.stringify(user));
+    await this.client.set(`user:${id}`, JSON.stringify(user));
     return user;
   }
 
-  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+  async createChatMessage(insertMessage: InsertChatMessage & { namespace?: string }): Promise<ChatMessage> {
     const id = randomUUID();
-    const message: ChatMessage = { 
-      ...insertMessage, 
+    const namespace = insertMessage.namespace || "default";
+    const message: ChatMessage = {
+      ...insertMessage,
       id,
       timestamp: new Date().toISOString(),
       isBot: insertMessage.isBot ?? false,
-      namespace: insertMessage.namespace || "None",
+      namespace,
     };
-
-    const key = `chat_history:${insertMessage.namespace}:${insertMessage.sessionId}`;
-    await this.redis.rpush(key, JSON.stringify(message));
-    await this.redis.expire(key, 86400); // expire in 1 day
-
+    await this.client.lpush(
+      `chat_history:${namespace}:${insertMessage.sessionId}`,
+      JSON.stringify(message)
+    );
     return message;
   }
 
-  async getChatMessages(sessionId: string, namespace: string): Promise<ChatMessage[]> {
-    const key = `chat_history:${namespace}:${sessionId}`;
-    const messages = await this.redis.lrange(key, 0, -1);
-    return messages.map(msg => JSON.parse(msg));
+  async getChatMessages(sessionId: string, namespace: string = "default"): Promise<ChatMessage[]> {
+    const messages = await this.client.lrange(
+      `chat_history:${namespace}:${sessionId}`,
+      0,
+      -1
+    );
+    return messages
+      .map(msg => JSON.parse(msg))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }
+
+  async close(): Promise<void> {
+    await this.client.quit();
   }
 }
