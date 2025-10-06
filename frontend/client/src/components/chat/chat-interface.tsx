@@ -54,7 +54,7 @@ export function ChatInterface({ userId }: Props) {
 
   const queryKey = ["/api/chat", activeNamespace, sessionId, "messages"];
 
-  const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
+  const { data: messages = [], isLoading, error } = useQuery<ChatMessage[]>({
     queryKey,
     queryFn: async () => {
       if (!sessionId || !activeNamespace) return [];
@@ -62,9 +62,14 @@ export function ChatInterface({ userId }: Props) {
         "GET",
         `/api/chat/${activeNamespace}/${sessionId}/message`
       );
-      if (!res.ok) throw new Error("Failed to fetch messages");
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("[ERROR] Failed to fetch messages:", res.status, text);
+        throw new Error(`Failed to fetch messages: ${res.status}`);
+      }
       const data = await res.json();
-      return data.messages || [];  // Extract the array, default to [] if missing
+      console.log("[DEBUG] GET Response:", data);
+      return data.messages || [];
     },
     enabled: !!sessionId && !!activeNamespace,
     staleTime: 0,
@@ -72,7 +77,7 @@ export function ChatInterface({ userId }: Props) {
   });
   console.log("Session ID:", sessionId);
   console.log("Active Namespace:", activeNamespace);
-  console.log("Messages:", messages);
+  console.log("[DEBUG] Rendered Messages:", messages);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -84,30 +89,47 @@ export function ChatInterface({ userId }: Props) {
         `/api/chat/${activeNamespace}/${sessionId}/message`,
         { content }
       );
-      if (!res.ok) throw new Error("Failed to send message");
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("[ERROR] Failed to send message:", res.status, text);
+        throw new Error("Failed to send message");
+      }
 
       const data = await res.json();
-      return data;  // Now returns the full backend response
+      console.log("[DEBUG] POST Response:", data);
+      return data;
     },
     onMutate: async (content: string) => {
       const previous = queryClient.getQueryData<ChatMessage[]>(queryKey) || [];
-      const optimisticMessage: ChatMessage = {
-        id: `temp-${Math.random()}`,
+      const optimisticUserMessage: ChatMessage = {
+        id: `temp-user-${Math.random()}`,
         content,
         isBot: false,
         timestamp: new Date().toISOString(),
         sessionId: sessionId!,
         namespace: activeNamespace!,
       };
-      queryClient.setQueryData<ChatMessage[]>(queryKey, [...previous, optimisticMessage]);
+      queryClient.setQueryData<ChatMessage[]>(queryKey, [...previous, optimisticUserMessage]);
       return { previous };
     },
     onSuccess: (data, content, context) => {
+      console.log("[DEBUG] onSuccess data:", data);
+      // Update messages with POST response data
       queryClient.setQueryData<ChatMessage[]>(queryKey, data.messages);
+      // Invalidate to trigger GET refetch for consistency
+      queryClient.invalidateQueries({ queryKey });
     },
     onError: (error, content, context) => {
+      console.log("[DEBUG] onError data:", context);
+      // Update with fallback message if available in context
       if (context?.previous) {
-        queryClient.setQueryData<ChatMessage[]>(queryKey, context.previous);
+        const previousMessages = context.previous;
+        const lastBotMessage = previousMessages.find(msg => msg.isBot && msg.id.startsWith("temp-bot"));
+        if (lastBotMessage) {
+          // Replace placeholder with fallback if needed
+          lastBotMessage.content = "عذراً، حدث خطأ مؤقت. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.";
+        }
+        queryClient.setQueryData<ChatMessage[]>(queryKey, previousMessages);
       }
       toast({
         variant: "destructive",
@@ -138,13 +160,10 @@ export function ChatInterface({ userId }: Props) {
     <div className="flex flex-col h-screen bg-neutral-50">
       <Header />
       <div className="flex flex-row" style={{ height: "calc(100vh - 4rem)" }}>
-        {/* Sidebar */}
         <Sidebar
           activeNamespace={activeNamespace}
           setActiveNamespace={setActiveNamespace}
         />
-
-        {/* Chat Area */}
         <div className="flex flex-col flex-1">
           <div className="bg-white border-b border-neutral-100 py-4 px-6">
             <div className="max-w-4xl mx-auto text-center">
@@ -158,8 +177,6 @@ export function ChatInterface({ userId }: Props) {
               </p>
             </div>
           </div>
-
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin">
             <div className="max-w-4xl mx-auto space-y-4">
               {!activeNamespace && (
@@ -167,7 +184,6 @@ export function ChatInterface({ userId }: Props) {
                   اختر مساحة محادثة من الشريط الجانبي للبدء.
                 </div>
               )}
-
               {activeNamespace && messages.length === 0 && !isLoading && (
                 <div className="flex items-start space-x-3 space-x-reverse">
                   <div className="flex-shrink-0">
@@ -187,12 +203,10 @@ export function ChatInterface({ userId }: Props) {
                   </div>
                 </div>
               )}
-
               {activeNamespace &&
                 messages.map((message) => (
                   <MessageBubble key={message.id} message={message} />
                 ))}
-
               {sendMessageMutation.isPending && (
                 <div className="flex items-start space-x-3 space-x-reverse">
                   <div className="flex-shrink-0">
@@ -217,12 +231,9 @@ export function ChatInterface({ userId }: Props) {
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
           </div>
-
-          {/* Input */}
           <ChatInput
             onSendMessage={handleSendMessage}
             isLoading={sendMessageMutation.isPending}

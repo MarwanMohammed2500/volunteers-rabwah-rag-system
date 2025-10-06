@@ -5,6 +5,7 @@ import yaml
 from yaml.loader import SafeLoader
 from utils.Load_data import loading_data
 from utils.Vector_db import add_documents_to_pinecone, delete_vectors_by_source, get_existing_namespaces
+import base64
 
 with open("src/admin_auth.yaml") as file:
     config = yaml.load(file, Loader=SafeLoader)
@@ -73,6 +74,7 @@ def main():
                 key="new_namespace_input",
                 help="Enter a name for the new namespace"
             )
+            new_namespace = base64.urlsafe_b64encode(new_namespace.replace(" ", "-").lower().encode("utf-8")).decode("ascii") # Pinecone namespaces must be ASCII encoded
             
             new_namespace_files = st.file_uploader(
                 "Upload files for new namespace:", 

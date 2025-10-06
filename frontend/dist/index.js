@@ -4,50 +4,64 @@ import express2 from "express";
 // server/routes.ts
 import { createServer } from "http";
 
-// server/storage.ts
+// server/redisStorage.ts
+import { Redis } from "ioredis";
 import { randomUUID } from "crypto";
-var MemStorage = class {
-  users;
-  chatMessages;
-  constructor() {
-    this.users = /* @__PURE__ */ new Map();
-    this.chatMessages = /* @__PURE__ */ new Map();
+var RedisStorage = class {
+  client;
+  constructor(url) {
+    this.client = new Redis(url);
   }
   async getUser(id) {
-    return this.users.get(id);
+    const user = await this.client.get(`user:${id}`);
+    return user ? JSON.parse(user) : void 0;
   }
   async getUserByUsername(username) {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    return void 0;
   }
   async createUser(insertUser) {
     const id = randomUUID();
     const user = { ...insertUser, id };
-    this.users.set(id, user);
+    await this.client.set(`user:${id}`, JSON.stringify(user));
     return user;
   }
   async createChatMessage(insertMessage) {
     const id = randomUUID();
+    const namespace = insertMessage.namespace || "default";
     const message = {
       ...insertMessage,
       id,
-      timestamp: /* @__PURE__ */ new Date(),
-      isBot: insertMessage.isBot ?? false
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      isBot: insertMessage.isBot ?? false,
+      namespace
     };
-    this.chatMessages.set(id, message);
+    await this.client.lpush(
+      `chat_history:${namespace}:${insertMessage.sessionId}`,
+      JSON.stringify(message)
+    );
     return message;
   }
-  async getChatMessages(sessionId) {
-    return Array.from(this.chatMessages.values()).filter((message) => message.sessionId === sessionId).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  async getChatMessages(sessionId, namespace = "default") {
+    const messages = await this.client.lrange(
+      `chat_history:${namespace}:${sessionId}`,
+      0,
+      -1
+    );
+    return messages.map((msg) => JSON.parse(msg)).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }
+  async close() {
+    await this.client.quit();
   }
 };
-var storage = new MemStorage();
+
+// server/storage.ts
+var storage = new RedisStorage(process.env.REDIS_URL || "redis://localhost:6379");
 
 // shared/schema.ts
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 var users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -58,108 +72,126 @@ var chatMessages = pgTable("chat_messages", {
   content: text("content").notNull(),
   isBot: boolean("is_bot").notNull().default(false),
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
-  sessionId: varchar("session_id").notNull()
+  sessionId: varchar("session_id").notNull(),
+  namespace: varchar("namespace").notNull()
+  // Required in table and stored objects
 });
 var insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true
 });
-var insertChatMessageSchema = createInsertSchema(chatMessages).pick({
+var baseInsertChatMessageSchema = createInsertSchema(chatMessages).pick({
   content: true,
   isBot: true,
   sessionId: true
+}).extend({
+  namespace: z.string().optional()
+  // Make optional for incoming validation
 });
+var insertChatMessageSchema = baseInsertChatMessageSchema;
 
 // server/routes.ts
-async function getRagChatbotResponse(
-  userMessage,
-  namespace,
-  sessionId,
-  chat_history
-) {
-  const payload = { content: userMessage, chat_history };
-
-  console.log("📤 Sending to FastAPI:", JSON.stringify(payload, null, 2));
-
+import { fileURLToPath } from "url";
+import path from "path";
+import dotenv from "dotenv";
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+async function getRagChatbotResponse(userMessage, namespace, sessionId, chat_history) {
+  const payload = {
+    content: userMessage,
+    chat_history
+  };
+  console.log("[INFO] Sending to FastAPI:", JSON.stringify(payload, null, 2));
   const response = await fetch(
-    `http://backend:8080/api/chat/${namespace}/${sessionId}/message`,
+    `${process.env.RAG_ENDPOINT}/api/chat/${namespace}/${sessionId}/message`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     }
   );
-
   if (!response.ok) {
-    throw new Error(`FastAPI responded with status: ${response.status}`);
+    throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
   }
-
   const data = await response.json();
-  console.log("📥 Received from FastAPI:", data);
-
+  console.log("[INFO] Received from FastAPI:", data);
   return data.response;
 }
-
 async function registerRoutes(app2) {
-  app2.get("/api/chat/:sessionId/message", async (req, res) => {
+  app2.post("/api/chat/:namespace/:sessionId/message", async (req, res) => {
+    const { namespace, sessionId } = req.params;
+    const parsedBody = insertChatMessageSchema.parse({
+      ...req.body,
+      sessionId
+    });
+    const { content, isBot = false } = parsedBody;
+    const userMessage = await storage.createChatMessage({
+      content,
+      isBot,
+      sessionId,
+      namespace
+    });
+    const allMessages = await storage.getChatMessages(sessionId, namespace);
+    console.log("[DEBUG] All Messages:", allMessages);
+    const chat_history = allMessages.map(
+      (msg) => msg.isBot ? { ai: msg.content } : { human: msg.content }
+    );
+    let botResponse;
     try {
-      const { sessionId } = req.params;
-      console.log(`\u{1F4CB} Fetching messages for session: ${sessionId}`);
-      const messages = await storage.getChatMessages(sessionId);
-      console.log(`\u{1F4CB} Found ${messages.length} messages:`, messages);
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-      res.json(messages);
+      botResponse = await getRagChatbotResponse(content, namespace, sessionId, chat_history);
     } catch (error) {
-      console.error("Error fetching messages:", error);
-      res.status(500).json({ message: "Internal server error" });
+      console.error("[ERROR] RAG API error:", error);
+      botResponse = "\u0639\u0630\u0631\u0627\u064B\u060C \u062D\u062F\u062B \u062E\u0637\u0623 \u0645\u0624\u0642\u062A. \u064A\u0631\u062C\u0649 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649 \u0623\u0648 \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645 \u0627\u0644\u0641\u0646\u064A.";
+    }
+    const botMessage = await storage.createChatMessage({
+      content: botResponse,
+      isBot: true,
+      sessionId,
+      namespace
+    });
+    const updatedMessages = await storage.getChatMessages(sessionId, namespace);
+    res.json({
+      response: botResponse,
+      session_id: sessionId,
+      namespace,
+      messages: updatedMessages
+    });
+  });
+  app2.get("/api/chat/:namespace/:sessionId/message", async (req, res) => {
+    const { namespace, sessionId } = req.params;
+    try {
+      const response = await fetch(
+        `${process.env.RAG_ENDPOINT}/api/chat/${namespace}/${sessionId}/message`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("[ERROR] Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
     }
   });
-  app2.post("/api/chat/:sessionId/message", async (req, res) => {
+  app2.get("/api/chat/namespaces", async (_req, res) => {
     try {
-      const { sessionId } = req.params;
-      const { content } = insertChatMessageSchema.omit({ sessionId: true }).parse(req.body);
-      const userMessage = await storage.createChatMessage({
-        content,
-        isBot: false,
-        sessionId
+      const response = await fetch(`${process.env.RAG_ENDPOINT}/api/chat/namespaces`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
       });
-      const allMessages = await storage.getChatMessages(sessionId);
-      const chat_history = allMessages.map(
-        (msg) => msg.isBot ? { ai: msg.content } : { human: msg.content }
-      );
-      let botResponse;
-      try {
-        botResponse = await getRagChatbotResponse(content, sessionId, chat_history);
-      } catch (error) {
-        console.error("RAG API error:", error);
-        botResponse = "\u0639\u0630\u0631\u0627\u064B\u060C \u062D\u062F\u062B \u062E\u0637\u0623 \u0645\u0624\u0642\u062A. \u064A\u0631\u062C\u0649 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649 \u0623\u0648 \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u062F\u0639\u0645 \u0627\u0644\u0641\u0646\u064A.";
+      if (!response.ok) {
+        throw new Error(`[ERROR] FastAPI responded with status: ${response.status}`);
       }
-      const botMessage = await storage.createChatMessage({
-        content: botResponse,
-        isBot: true,
-        sessionId
-      });
-      res.json({
-        userMessage: {
-          id: userMessage.id,
-          content: userMessage.content,
-          isBot: userMessage.isBot,
-          sessionId: userMessage.sessionId,
-          timestamp: userMessage.timestamp
-        },
-        botMessage: {
-          id: botMessage.id,
-          content: botMessage.content,
-          isBot: botMessage.isBot,
-          sessionId: botMessage.sessionId,
-          timestamp: botMessage.timestamp
-        }
-      });
+      const data = await response.json();
+      res.json(data);
     } catch (error) {
-      console.error("Error processing message:", error);
-      res.status(500).json({ message: "Internal server error" });
+      console.error("[ERROR] Error fetching namespaces:", error);
+      res.status(500).json({ message: "Failed to fetch namespaces" });
     }
   });
   return createServer(app2);
@@ -168,13 +200,13 @@ async function registerRoutes(app2) {
 // server/vite.ts
 import express from "express";
 import fs from "fs";
-import path2 from "path";
+import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path2 from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 var vite_config_default = defineConfig({
   plugins: [
@@ -188,20 +220,28 @@ var vite_config_default = defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets")
+      "@": path2.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path2.resolve(import.meta.dirname, "shared"),
+      "@assets": path2.resolve(import.meta.dirname, "attached_assets")
     }
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path2.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path2.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true
   },
   server: {
     fs: {
       strict: true,
       deny: ["**/.*"]
+    },
+    proxy: {
+      "/api": {
+        target: "http://backend:8080",
+        // FastAPI backend
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 });
@@ -241,7 +281,7 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path2.resolve(
+      const clientTemplate = path3.resolve(
         import.meta.dirname,
         "..",
         "client",
@@ -261,7 +301,7 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "public");
+  const distPath = path3.resolve(import.meta.dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -269,7 +309,7 @@ function serveStatic(app2) {
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
@@ -279,7 +319,7 @@ app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -288,8 +328,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }

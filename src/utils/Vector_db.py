@@ -7,8 +7,9 @@ from langchain.schema import Document
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from .exceptions import IndexNotFound
+
 # Load environment variables
 _ = load_dotenv(override=True)
 

@@ -12,6 +12,7 @@ import uvicorn
 import asyncio
 import os
 import logging
+import base64
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -50,13 +51,12 @@ app.add_middleware(
     allow_headers=allow_headers,
 )
 
-
-
 @app.get("/api/chat/namespaces")
 async def get_chat_namespaces():
     """Return available chat namespace names"""
     namespaces = get_existing_namespaces("non-profit-rag")
-    logger.info(f"Returned namespaces: {namespaces}")
+    for namespace in range(len(namespaces)):
+        namespaces[namespace] = (base64.urlsafe_b64decode(namespaces[namespace]).decode("utf-8")).replace("-", " ").title() # Decode ASCII encoding
     if len(namespaces) == 0:
         return JSONResponse(content={"namespaces": ["default"]})
     return JSONResponse(content={"namespaces": namespaces})
@@ -75,28 +75,36 @@ async def get_chat_messages(namespace: str, session_id: str):
 async def chat_endpoint(namespace: str, session_id: str, request: ChatRequest):
     try:
         # Get existing chat history in text form for RAG
-        rag_history = await chat_history_manager.get_messages_as_text(session_id, namespace)
+        try:
+            rag_history = await chat_history_manager.get_messages(session_id, namespace)
+        except Esxception as e:
+            logger.error(f"[ERROR] Error While getting messages from redis server: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
         # Process the chat through your RAG system
-        rag_response = await asyncio.get_event_loop().run_in_executor(
-            None,
-            get_response,
-            request.content,
-            rag_history,
-            namespace
-        )
+        try:
+            rag_response = await get_response(request.content, rag_history, namespace)
+            logger.info(f"[DEBUG] Namespace: {namespace}")
+        except Exception as e:
+            logger.error(f"[ERROR] Error While getting RAG response: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-        # Save the human message
-        logger.info("[DEBUG] Adding human message...")
-        await chat_history_manager.add_human_message(session_id=session_id, content=request.content, namespace=namespace)
+        try:
+            # Save the human message
+            logger.info("[DEBUG] Adding human message...")
+            await chat_history_manager.add_human_message(session_id=session_id, content=request.content, namespace=namespace)
 
-        # Save the AI message
-        logger.info("[DEBUG] Adding AI message...")
-        await chat_history_manager.add_ai_message(session_id=session_id, content=rag_response['answer'], namespace=namespace)
+            # Save the AI message
+            logger.info("[DEBUG] Adding AI message...")
+            await chat_history_manager.add_ai_message(session_id=session_id, content=rag_response['answer'], namespace=namespace)
+        except Exception as e:
+            logger.error(f"[ERROR] Error While saving messages to redis server: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
 
         # Fetch updated chat history
         logger.info("[DEBUG] Fetching updated messages...")
         messages = await chat_history_manager.get_messages(session_id, namespace)
+        logger.info(f"[DEBUG] Final messages type: {type(messages[0]) if messages else None}")
 
         return JSONResponse({
             "response": rag_response['answer'],
@@ -119,5 +127,5 @@ if __name__ == "__main__":
         "main:app",
         host=host,
         port=port,
-        reload=False
+        reload=True
     )

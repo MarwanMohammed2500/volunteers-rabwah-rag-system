@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Redis configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis_server:6379")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 SESSION_TTL = int(os.getenv("SESSION_TTL", 86400))  # 24 hours
 
 class AsyncRedisChatManager:
@@ -52,39 +52,30 @@ class AsyncRedisChatManager:
         """Generate Redis key for session"""
         return f"chat_history:{namespace}:{session_id}"
     
-    async def add_message(self, session_id: str, namespace: str, role: str, content: str):
+    async def add_message(self, session_id: str, namespace: str, isBot: bool, content: str):
         """Add message to chat history"""
         if self.client is None:
             await self.initialize()
 
         key = self._get_session_key(session_id=session_id, namespace=namespace)
         message = {
-            "role": role,
+            "isBot": isBot,
             "content": content,
             "timestamp": int(time.time())
         }
 
-        logger.info(f"[DEBUG] Adding message to {key}")
         await self.client.rpush(key, json.dumps(message))
-        logger.info(f"Pushed Key!: {key}")
         ok = await self.client.expire(key, int(self.session_ttl))
         if not ok:
             logger.warning(f"[WARN] Failed to set TTL for {key}")
         else:
             ttl = await self.client.ttl(key)
-            logger.info(f"[DEBUG] Key {key} TTL set to {ttl} seconds")
     
     async def get_messages(self, session_id: str, namespace: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Get all messages for a session"""
         key = self._get_session_key(session_id=session_id, namespace=namespace)
-        
-        logger.info(f"[DEBUG] Getting messages for {key}")
         messages_json = await self.client.lrange(key, 0, -1)
-        logger.info(f"[DEBUG] Found {len(messages_json)} messages for {key}")
-        logger.info(f"[DEBUG] Messages: {messages_json}")
-        
         messages = []
-        
         for msg_json in messages_json:
             try:
                 messages.append(json.loads(msg_json))
@@ -92,7 +83,7 @@ class AsyncRedisChatManager:
                 # Handle corrupted messages gracefully
                 continue
         
-        return messages
+        return messages[::-1] # For some reason, the frontend renders the messages in a reversed order. And honestly, this was easier than trying to get the frontend to render them in a correct order.
     
     async def get_messages_as_text(self, session_id: str, namespace: str) -> List[str]:
         """Retrieve chat history in RAG-friendly text format"""
@@ -100,9 +91,9 @@ class AsyncRedisChatManager:
         
         rag_history = []
         for msg in messages:
-            role = msg.get("role", "unknown")
+            isBot = msg.get("isBot", False)
             content = msg.get("content", "")
-            rag_history.append(f"{role}: {content}")
+            rag_history.append(f"{isBot}: {content}")
         
         return rag_history
     
