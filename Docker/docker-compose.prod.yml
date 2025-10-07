@@ -29,6 +29,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    depends_on:
+    - redis_server
 
   frontend:
     image: marwanmohammed2500/rabwah-rag-system:rabwah-frontend-latest
@@ -44,6 +46,9 @@ services:
         parallelism: 1
         delay: 10s
         order: start-first
+    depends_on:
+    - backend
+    - redis_server
 
 volumes:
   redis_data:

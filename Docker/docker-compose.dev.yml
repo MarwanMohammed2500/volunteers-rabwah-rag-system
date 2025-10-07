@@ -22,6 +22,14 @@ services:
     - "8000:8000"
     networks:
     - rag-app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+    - redis_server
   
   frontend:
     build:
@@ -35,6 +43,7 @@ services:
     - rag-app
     depends_on:
     - backend
+    - redis_server
 
 volumes:
   redis_data:

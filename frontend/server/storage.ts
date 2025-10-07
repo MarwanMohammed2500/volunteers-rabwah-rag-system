@@ -3,7 +3,10 @@ import { randomUUID } from "crypto";
 import { RedisStorage } from "./redisStorage";
 import path from "path";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 export const storage = new RedisStorage(process.env.REDIS_URL || "redis://redis_server:6379");
 

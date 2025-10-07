@@ -83,7 +83,7 @@ embedding_model = HuggingFaceEmbeddings(
         )
 vector_db = PineconeVectorStore(embedding=embedding_model, index_name=index_name)
 
-async def get_response(user_query, chat_history, namespace: str = None):
+def get_response(user_query, chat_history, namespace: str = None):
     processed_history = []
     for msg in chat_history:
         if msg["isBot"] == "human" or msg["isBot"] is False:
@@ -93,7 +93,7 @@ async def get_response(user_query, chat_history, namespace: str = None):
     
     load_qa_chain = create_retriever_chain(vectorstore=vector_db, namespace=namespace)
     
-    result = await load_qa_chain.ainvoke(
+    result = load_qa_chain.invoke(
                 {
                     "question": user_query,
                     "chat_history": processed_history,

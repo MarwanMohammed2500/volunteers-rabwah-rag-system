@@ -83,7 +83,7 @@ async def chat_endpoint(namespace: str, session_id: str, request: ChatRequest):
 
         # Process the chat through your RAG system
         try:
-            rag_response = await get_response(request.content, rag_history, namespace)
+            rag_response = get_response(request.content, rag_history, namespace)
             logger.info(f"[DEBUG] Namespace: {namespace}")
         except Exception as e:
             logger.error(f"[ERROR] Error While getting RAG response: {str(e)}")
