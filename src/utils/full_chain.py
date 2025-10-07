@@ -51,6 +51,7 @@ def create_retriever_chain(vectorstore, namespace: str = None):
     - Be concise, accurate, and neutral.
     - If the context includes multiple relevant facts, summarize them clearly.
     - If the answer can be summarized in bullet points then do it.
+    - If the user shows any signs of gratitude (Like saying thanks, for instance), reply nicely.
 
     ---
 
