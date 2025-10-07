@@ -27,11 +27,6 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
     }
   };
 
-  const quickActions = [
-    "ما هي الاخلاقيات المذمومة بالتطوع؟",
-    "تعريف التطوع",
-  ];
-
   return (
     <div className="bg-white border-t border-neutral-100 px-4 py-4">
       <div className="max-w-4xl mx-auto">
@@ -64,18 +59,6 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
             <Send className="w-5 h-5" />
           </Button>
         </form>
-
-        <div className="mt-3 flex flex-wrap gap-2 justify-center">
-          {quickActions.map((action) => (
-            <button
-              key={action}
-              onClick={() => setMessage(action)}
-              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-2 rounded-full text-sm transition-colors"
-            >
-              {action}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
